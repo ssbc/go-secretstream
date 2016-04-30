@@ -4,14 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 )
-
-func init() {
-	// discard log output by default
-	log.SetOutput(ioutil.Discard)
-}
 
 // ChallengeLength is the length of a challenge message in bytes
 const ChallengeLength = 64

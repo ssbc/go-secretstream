@@ -1,12 +1,13 @@
 package shs
 
 import (
-	"github.com/agl/ed25519"
 	"io"
 	"log"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/agl/ed25519"
 )
 
 // StupidRandom always reads itself. Goal is determinism.
@@ -41,7 +42,7 @@ func TestAuth(t *testing.T) {
 		panic(err)
 	}
 
-	appKey := make([]byte, 64)
+	appKey := make([]byte, 32)
 	io.ReadFull(StupidRandom(255), appKey)
 
 	rServer, wClient := io.Pipe()
