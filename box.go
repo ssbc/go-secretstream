@@ -21,28 +21,31 @@ var (
 )
 
 type Boxer struct {
-	w      io.Writer
+	output io.Writer
 	secret *[32]byte
 	nonce  *[24]byte
 }
 
 type Unboxer struct {
-	pw *io.PipeWriter
-
-	r      io.Reader
+	output *io.PipeWriter
+	input  io.Reader
 	secret *[32]byte
 	nonce  *[24]byte
 }
 
 func NewBoxer(w io.Writer, nonce *[24]byte, secret *[32]byte) io.Writer {
-	return &Boxer{w: w, secret: secret, nonce: nonce}
+	return &Boxer{
+		output: w,
+		secret: secret,
+		nonce:  nonce,
+	}
 }
 
 func NewUnboxer(input io.Reader, nonce *[24]byte, secret *[32]byte) io.Reader {
 	pr, pw := io.Pipe()
 	unboxer := &Unboxer{
-		r:      input,
-		pw:     pw,
+		input:  input,
+		output: pw,
 		secret: secret,
 		nonce:  nonce,
 	}
@@ -73,10 +76,10 @@ func (u *Unboxer) readerloop() {
 	var ok bool
 	for {
 		hdr = hdr[:0]
-		_, err := io.ReadFull(u.r, hdrBox)
+		_, err := io.ReadFull(u.input, hdrBox)
 		log.Println("readerloop: read header")
 		if err != nil {
-			u.pw.CloseWithError(err)
+			u.output.CloseWithError(err)
 			return
 		}
 
@@ -86,7 +89,7 @@ func (u *Unboxer) readerloop() {
 		log.Printf("readerloop: box len %v\n", len(hdrBox))
 		hdr, ok = secretbox.Open(hdr, hdrBox, u.nonce, u.secret)
 		if !ok {
-			u.pw.CloseWithError(fmt.Errorf("error opening header box"))
+			u.output.CloseWithError(fmt.Errorf("error opening header box"))
 			return
 		}
 
@@ -102,9 +105,9 @@ func (u *Unboxer) readerloop() {
 
 		copy(buf[:secretbox.Overhead], tag)
 
-		_, err = io.ReadFull(u.r, buf[len(tag):])
+		_, err = io.ReadFull(u.input, buf[len(tag):])
 		if err != nil {
-			u.pw.CloseWithError(err)
+			u.output.CloseWithError(err)
 			return
 		}
 
@@ -113,14 +116,14 @@ func (u *Unboxer) readerloop() {
 		out := make([]byte, 0, n)
 		out, ok = secretbox.Open(out, buf, increment(u.nonce), u.secret)
 		if !ok {
-			u.pw.CloseWithError(fmt.Errorf("error opening body box"))
+			u.output.CloseWithError(fmt.Errorf("error opening body box"))
 			return
 		}
 		log.Println("readerloop: opened body")
 
-		_, err = io.Copy(u.pw, bytes.NewBuffer(out))
+		_, err = io.Copy(u.output, bytes.NewBuffer(out))
 		if err != nil {
-			u.pw.CloseWithError(err)
+			u.output.CloseWithError(err)
 			return
 		}
 		increment(u.nonce)
@@ -182,12 +185,12 @@ func (b *Boxer) Write(buf []byte) (int, error) {
 		increment(increment(&nonce1))
 		increment(&nonce2)
 
-		_, err = b.w.Write(hdrBox)
+		_, err = b.output.Write(hdrBox)
 		if err != nil {
 			return 0, err
 		}
 
-		_, err = io.Copy(b.w, bytes.NewBuffer(boxed[secretbox.Overhead:]))
+		_, err = io.Copy(b.output, bytes.NewBuffer(boxed[secretbox.Overhead:]))
 		if err != nil {
 			return 0, err
 		}
