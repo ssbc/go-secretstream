@@ -77,23 +77,27 @@ func (u *Unboxer) readerloop() {
 			return
 		}
 
-		increment(u.nonce)
 		log.Printf("renderloop: header nonce is  %x\n", u.nonce)
 		log.Printf("readerloop: header secret is %x\n", u.secret)
 		log.Printf("readerloop: box is %x\n", hdrBox)
+		log.Printf("readerloop: box len %v\n", len(hdrBox))
 		hdr, ok = secretbox.Open(hdr, hdrBox, u.nonce, u.secret)
 		if !ok {
 			u.pw.CloseWithError(fmt.Errorf("error opening header box"))
 			return
 		}
 
-		log.Println("readerloop: opened header box")
+		log.Println("readerloop: opened header box. len:", len(hdr))
+		log.Printf("readerloop: header: %x\n", hdr)
 		n := binary.LittleEndian.Uint16(hdr[:2])
 
-		buf := make([]byte, n)
+		buf := make([]byte, n+secretbox.Overhead)
 
-		tag := hdr[2:]
-		copy(buf[:16], tag)
+		tag := hdr[2:] // len(tag) == seceretbox.Overhead
+
+		log.Println("readerloop:", "n:", n, "tag len:", len(tag), "buf len", len(buf))
+
+		copy(buf[:secretbox.Overhead], tag)
 
 		_, err = io.ReadFull(u.r, buf[len(tag):])
 		if err != nil {
@@ -116,6 +120,7 @@ func (u *Unboxer) readerloop() {
 			u.pw.CloseWithError(err)
 			return
 		}
+		increment(u.nonce)
 		log.Println("readerloop: pkg decoded and fed to consumer")
 	}
 }
@@ -146,14 +151,10 @@ func (b *Boxer) Write(buf []byte) (int, error) {
 
 		// buffer for box of current
 		boxed := make([]byte, 0, len(current)+secretbox.Overhead)
-		increment(&nonce2)
-		log.Printf("writerloop: header nonce is  %x\n", &nonce2)
-		log.Printf("writerloop: header secret is %x\n", b.secret)
-		boxed = secretbox.Seal(boxed, current, &nonce2, b.secret)
-		log.Printf("writerloop: box is %x\n", boxed)
+		boxed = secretbox.Seal(boxed, current, increment(&nonce2), b.secret)
 
 		// define and populate header
-		hdrPlain := bytes.NewBuffer(make([]byte, 18))
+		hdrPlain := bytes.NewBuffer(make([]byte, 0, 18))
 
 		err := binary.Write(hdrPlain, binary.BigEndian, uint16(len(buf)))
 		if err != nil {
@@ -168,8 +169,12 @@ func (b *Boxer) Write(buf []byte) (int, error) {
 			return 0, err
 		}
 
+		log.Printf("writerloop: header nonce is  %x\n", &nonce1)
+		log.Printf("writerloop: header secret is %x\n", b.secret)
 		hdrBox := make([]byte, 0, HeaderLength)
 		hdrBox = secretbox.Seal(hdrBox, hdrPlain.Bytes(), &nonce1, b.secret)
+		log.Printf("writerloop: box is %x\n", hdrBox)
+		log.Printf("writerloop: box len %v\n", len(hdrBox))
 
 		increment(increment(&nonce1))
 		increment(&nonce2)
