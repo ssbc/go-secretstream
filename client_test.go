@@ -3,11 +3,8 @@ package shs
 import (
 	"encoding/base64"
 	"encoding/json"
-	"io"
-	"net"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/cryptix/go/logging/logtest"
 	"github.com/cryptix/go/proc"
@@ -47,9 +44,6 @@ func TestClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	go io.Copy(w, server)
-	time.Sleep(2 * time.Second)
-
 	appKey, err := base64.StdEncoding.DecodeString("IhrX11txvFiVzm+NurzHLCqUUe3xZXkPfODnp7WlMpk=")
 	if err != nil {
 		t.Fatal(err)
@@ -63,12 +57,7 @@ func TestClient(t *testing.T) {
 		t.Fatal("error making server state:", err)
 	}
 
-	conn, err := net.Dial("tcp", "localhost:8978")
-	if err != nil {
-		t.Fatal("error listening:", err)
-	}
-
-	if err := Client(*clientState, conn); err != nil {
+	if err := Client(*clientState, server); err != nil {
 		t.Fatal(err)
 	}
 

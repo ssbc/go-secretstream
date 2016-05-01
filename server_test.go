@@ -2,9 +2,6 @@ package shs
 
 import (
 	"encoding/base64"
-	"io"
-	"net"
-	"os"
 	"testing"
 
 	"github.com/cryptix/go/logging/logtest"
@@ -36,26 +33,13 @@ func TestServer(t *testing.T) {
 	if err != nil {
 		t.Fatal("error making server state:", err)
 	}
-	l, err := net.Listen("tcp", "localhost:8978")
+
+	client, err := proc.StartStdioProcess("node", logtest.Logger("client_test.js", t), "client_test.js")
 	if err != nil {
-		t.Fatal("error listening:", err)
-	}
-	go func() {
-		client, err := proc.StartStdioProcess("node", logtest.Logger("client_test.js", t), "client_test.js")
-		if err != nil {
-			t.Fatal(err)
-		}
-		_, err = io.Copy(os.Stdout, client)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	conn, err := l.Accept()
-	if err != nil {
-		t.Fatal("error accepting:", err)
+		t.Fatal(err)
 	}
 
-	if err := Server(*serverState, conn); err != nil {
+	if err := Server(*serverState, client); err != nil {
 		t.Fatal(err)
 	}
 
