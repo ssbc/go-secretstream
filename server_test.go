@@ -28,7 +28,7 @@ func TestServer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var kp KeyPair
+	var kp EdKeyPair
 	copy(kp.Public[:], pubServ)
 	copy(kp.Secret[:], secSrv)
 

@@ -51,12 +51,12 @@ func TestAuth(t *testing.T) {
 	rwServer := rw{rServer, wServer}
 	rwClient := rw{rClient, wClient}
 
-	serverState, err := NewServerState(appKey, KeyPair{*pubSrv, *secSrv})
+	serverState, err := NewServerState(appKey, EdKeyPair{*pubSrv, *secSrv})
 	if err != nil {
 		t.Error("error making server state:", err)
 	}
 
-	clientState, err := NewClientState(appKey, KeyPair{*pubCli, *secCli}, *pubSrv)
+	clientState, err := NewClientState(appKey, EdKeyPair{*pubCli, *secCli}, *pubSrv)
 	if err != nil {
 		t.Error("error making client state:", err)
 	}

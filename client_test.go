@@ -19,7 +19,7 @@ func check(err error) {
 	}
 }
 
-func mustLoadKeyPair(fname string) KeyPair {
+func mustLoadKeyPair(fname string) EdKeyPair {
 	f, err := os.Open(fname)
 	check(err)
 
@@ -34,7 +34,7 @@ func mustLoadKeyPair(fname string) KeyPair {
 	secSrv, err := base64.StdEncoding.DecodeString(t.SecretKey)
 	check(err)
 
-	var kp KeyPair
+	var kp EdKeyPair
 	copy(kp.Public[:], pubClient)
 	copy(kp.Secret[:], secSrv)
 	return kp

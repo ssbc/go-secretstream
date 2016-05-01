@@ -2,17 +2,16 @@ package shs
 
 import (
 	"bytes"
-	"crypto/rand"
-	"crypto/sha256"
-	"io"
 	"log"
 
-	"github.com/GoKillers/libsodium-go/cryptoauth"
-	"github.com/GoKillers/libsodium-go/cryptobox"
-	"github.com/GoKillers/libsodium-go/cryptosecretbox"
-	"github.com/GoKillers/libsodium-go/scalarmult"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"crypto/sha512"
+
 	"github.com/agl/ed25519"
 	"github.com/agl/ed25519/extra25519"
+	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/nacl/box"
 )
 
@@ -20,9 +19,9 @@ import (
 type State struct {
 	appKey, remoteAppMac, secHash []byte
 
-	localExchange  KeyPair
-	local          KeyPair
-	remoteExchange KeyPair                     // TODO: also only ExchangePublic in practice
+	localExchange  CurveKeyPair
+	local          EdKeyPair
+	remoteExchange CurveKeyPair
 	remotePublic   [ed25519.PublicKeySize]byte // long-term
 
 	secret, secret2, secret3 [32]byte
@@ -32,14 +31,20 @@ type State struct {
 	aBob, bAlice [32]byte // better name? helloAlice, helloBob?
 }
 
-// KeyPair is a keypair for use with github.com/agl/ed25519
-type KeyPair struct {
+// EdKeyPair is a keypair for use with github.com/agl/ed25519
+type EdKeyPair struct {
 	Public [ed25519.PublicKeySize]byte
 	Secret [ed25519.PrivateKeySize]byte
 }
 
+// CurveKeyPair is a keypair for use with github.com/agl/ed25519
+type CurveKeyPair struct {
+	Public [32]byte
+	Secret [32]byte
+}
+
 // NewClientState initializes the state for the client side
-func NewClientState(appKey []byte, local KeyPair, remotePublic [ed25519.PublicKeySize]byte) (*State, error) {
+func NewClientState(appKey []byte, local EdKeyPair, remotePublic [ed25519.PublicKeySize]byte) (*State, error) {
 	state, err := newState(appKey, local)
 	if err != nil {
 		return state, err
@@ -51,22 +56,19 @@ func NewClientState(appKey []byte, local KeyPair, remotePublic [ed25519.PublicKe
 }
 
 // NewServerState initializes the state for the server side
-func NewServerState(appKey []byte, local KeyPair) (*State, error) {
+func NewServerState(appKey []byte, local EdKeyPair) (*State, error) {
 	return newState(appKey, local)
 }
 
 // newState initializes the state needed by both client and server
-func newState(appKey []byte, local KeyPair) (*State, error) {
-	seedA := make([]byte, cryptobox.CryptoBoxSeedBytes())
-	io.ReadFull(rand.Reader, seedA)
-
-	secKey, pubKey, _ := cryptobox.CryptoBoxSeedKeyPair(seedA)
+func newState(appKey []byte, local EdKeyPair) (*State, error) {
+	pubKey, secKey, _ := box.GenerateKey(rand.Reader)
 
 	s := State{
 		appKey: appKey,
 	}
-	copy(s.localExchange.Public[:], pubKey)
-	copy(s.localExchange.Secret[:], secKey)
+	copy(s.localExchange.Public[:], pubKey[:])
+	copy(s.localExchange.Secret[:], secKey[:])
 	s.local = local
 
 	return &s, nil
@@ -74,8 +76,9 @@ func newState(appKey []byte, local KeyPair) (*State, error) {
 
 // createChallenge returns a buffer with a challenge
 func (s *State) createChallenge() []byte {
-	appMac, _ := cryptoauth.CryptoAuth(s.localExchange.Public[:], s.appKey[:32])
-	return append(appMac[:32], s.localExchange.Public[:]...)
+	appMac := hmac.New(sha512.New, s.appKey[:32])
+	appMac.Write(s.localExchange.Public[:])
+	return append(appMac.Sum(nil)[:32], s.localExchange.Public[:]...)
 }
 
 // verifyChallenge returns whether the passed buffer is valid
@@ -83,13 +86,16 @@ func (s *State) verifyChallenge(ch []byte) bool {
 	mac := ch[:32]
 	remoteEphPubKey := ch[32:]
 
-	var ok = cryptoauth.CryptoAuthVerify(mac, remoteEphPubKey, s.appKey[:32]) == 0
+	appMac := hmac.New(sha512.New, s.appKey[:32])
+	appMac.Write(remoteEphPubKey)
+	ok := hmac.Equal(appMac.Sum(nil)[:32], mac)
 
 	copy(s.remoteExchange.Public[:], remoteEphPubKey)
 	s.remoteAppMac = mac
 
-	sec, _ := scalarmult.CryptoScalarMult(s.localExchange.Secret[:32], s.remoteExchange.Public[:])
-	copy(s.secret[:], sec)
+	var sec [32]byte
+	curve25519.ScalarMult(&sec, &s.localExchange.Secret, &s.remoteExchange.Public)
+	copy(s.secret[:], sec[:])
 
 	secHasher := sha256.New()
 	secHasher.Write(s.secret[:])
@@ -102,8 +108,9 @@ func (s *State) verifyChallenge(ch []byte) bool {
 func (s *State) createClientAuth() []byte {
 	var curveRemotePubKey [32]byte
 	extra25519.PublicKeyToCurve25519(&curveRemotePubKey, &s.remotePublic)
-	aBob, _ := scalarmult.CryptoScalarMult(s.localExchange.Secret[:32], curveRemotePubKey[:])
-	copy(s.aBob[:], aBob)
+	var aBob [32]byte
+	curve25519.ScalarMult(&aBob, &s.localExchange.Secret, &curveRemotePubKey)
+	copy(s.aBob[:], aBob[:])
 
 	secHasher := sha256.New()
 	secHasher.Write(s.appKey)
@@ -123,17 +130,18 @@ func (s *State) createClientAuth() []byte {
 	helloBuf.Write(s.local.Public[:])
 	s.hello = helloBuf.Bytes()
 
+	out := make([]byte, 0, len(s.hello)-box.Overhead)
 	var n [24]byte
-	out, _ := secretbox.CryptoSecretBoxEasy(s.hello, n[:], s.secret2[:])
+	out = box.SealAfterPrecomputation(out, s.hello, &n, &s.secret2)
 	return out
 }
 
 // verifyClientAuth returns whether a buffer contains a valid clientAuth message
 func (s *State) verifyClientAuth(data []byte) bool {
-	var cvSec [32]byte
+	var cvSec, aBob [32]byte
 	extra25519.PrivateKeyToCurve25519(&cvSec, &s.local.Secret)
-	aBob, _ := scalarmult.CryptoScalarMult(cvSec[:], s.remoteExchange.Public[:])
-	copy(s.aBob[:], aBob)
+	curve25519.ScalarMult(&aBob, &cvSec, &s.remoteExchange.Public)
+	copy(s.aBob[:], aBob[:])
 
 	secHasher := sha256.New()
 	secHasher.Write(s.appKey)
@@ -173,8 +181,9 @@ func (s *State) verifyClientAuth(data []byte) bool {
 func (s *State) createServerAccept() []byte {
 	var curveRemotePubKey [32]byte
 	extra25519.PublicKeyToCurve25519(&curveRemotePubKey, &s.remotePublic)
-	bAlice, _ := scalarmult.CryptoScalarMult(s.localExchange.Secret[:32], curveRemotePubKey[:])
-	copy(s.bAlice[:], bAlice)
+	var bAlice [32]byte
+	curve25519.ScalarMult(&bAlice, &s.localExchange.Secret, &curveRemotePubKey)
+	copy(s.bAlice[:], bAlice[:])
 
 	secHasher := sha256.New()
 	secHasher.Write(s.appKey)
@@ -199,8 +208,9 @@ func (s *State) createServerAccept() []byte {
 func (s *State) verifyServerAccept(boxedOkay []byte) bool {
 	var curveLocalSec [32]byte
 	extra25519.PrivateKeyToCurve25519(&curveLocalSec, &s.local.Secret)
-	bAlice, _ := scalarmult.CryptoScalarMult(curveLocalSec[:], s.remoteExchange.Public[:])
-	copy(s.bAlice[:], bAlice)
+	var bAlice [32]byte
+	curve25519.ScalarMult(&bAlice, &curveLocalSec, &s.remoteExchange.Public)
+	copy(s.bAlice[:], bAlice[:])
 
 	secHasher := sha256.New()
 	secHasher.Write(s.appKey)
@@ -210,8 +220,9 @@ func (s *State) verifyServerAccept(boxedOkay []byte) bool {
 	copy(s.secret3[:], secHasher.Sum(nil))
 
 	var nonce [24]byte // always 0?
-	out, ex := secretbox.CryptoSecretBoxOpenEasy(boxedOkay, nonce[:], s.secret3[:])
-	if ex != 0 {
+	out := make([]byte, 0, len(boxedOkay)-16)
+	out, ok := box.OpenAfterPrecomputation(out, boxedOkay, &nonce, &s.secret3)
+	if !ok {
 		log.Println("client/VerifyServerAccept: couldn't open s3 box")
 		return false
 	}
