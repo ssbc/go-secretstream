@@ -27,7 +27,7 @@ func TestBox(t *testing.T) {
 	go func() {
 		_, err := bw.Write([]byte{0, 1, 2, 3, 4, 5})
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 	}()
 
@@ -35,7 +35,7 @@ func TestBox(t *testing.T) {
 
 	n, err := br.Read(buf[:6])
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	rx := buf[:n]
 
