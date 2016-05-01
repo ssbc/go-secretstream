@@ -27,8 +27,6 @@ type Boxer struct {
 }
 
 type Unboxer struct {
-	//pipe
-	io.Reader
 	pw *io.PipeWriter
 
 	r      io.Reader
@@ -40,13 +38,18 @@ func NewBoxer(w io.Writer, nonce *[24]byte, secret *[32]byte) io.Writer {
 	return &Boxer{w: w, secret: secret, nonce: nonce}
 }
 
-func NewUnboxer(r io.Reader, nonce *[24]byte, secret *[32]byte) io.Reader {
-	unboxer := &Unboxer{r: r, secret: secret, nonce: nonce}
-	unboxer.Reader, unboxer.pw = io.Pipe()
+func NewUnboxer(input io.Reader, nonce *[24]byte, secret *[32]byte) io.Reader {
+	pr, pw := io.Pipe()
+	unboxer := &Unboxer{
+		r:      input,
+		pw:     pw,
+		secret: secret,
+		nonce:  nonce,
+	}
 
 	go unboxer.readerloop()
 
-	return unboxer
+	return pr
 }
 
 func increment(b *[24]byte) *[24]byte {
