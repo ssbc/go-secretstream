@@ -89,7 +89,7 @@ func (u *Unboxer) readerloop() {
 
 		log.Println("readerloop: opened header box. len:", len(hdr))
 		log.Printf("readerloop: header: %x\n", hdr)
-		n := binary.LittleEndian.Uint16(hdr[:2])
+		n := binary.BigEndian.Uint16(hdr[:2])
 
 		buf := make([]byte, n+secretbox.Overhead)
 
@@ -184,7 +184,7 @@ func (b *Boxer) Write(buf []byte) (int, error) {
 			return 0, err
 		}
 
-		_, err = io.Copy(b.w, bytes.NewBuffer(boxed[HeaderLength:]))
+		_, err = io.Copy(b.w, bytes.NewBuffer(boxed[secretbox.Overhead:]))
 		if err != nil {
 			return 0, err
 		}
