@@ -49,7 +49,7 @@ func TestInterop_WriteToJS(t *testing.T) {
 	got := s.Text()
 
 	if got != want {
-		t.Fatalf("did not get it..! %s", got)
+		t.Fatalf("test data missmatch! got:%q", got)
 	}
 }
 
