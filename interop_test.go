@@ -6,11 +6,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/cryptix/go/logging/logtest"
 	"github.com/cryptix/go/proc"
 )
+
+const cnt = 1000
 
 func check(err error) {
 	if err != nil {
@@ -40,16 +43,19 @@ func TestInterop_WriteToJS(t *testing.T) {
 	}
 
 	w := NewBoxer(node, &nonce, &key)
-	want := "Hello, Tests!"
+	want := strings.Repeat("Hello, Tests!", cnt)
 	if _, err := fmt.Fprintln(w, want); err != nil {
 		t.Fatal(err)
 	}
 
 	s := bufio.NewScanner(node)
-	got := s.Text()
-
-	if got != want {
-		t.Fatalf("test data missmatch! got:%q", got)
+	for s.Scan() {
+		got := s.Text()
+		t.Log(got)
+		if got == want {
+			break
+		}
+		t.Error("test data missmatch! got:%q", got)
 	}
 }
 
@@ -76,15 +82,19 @@ func TestInterop_ReadFromJS(t *testing.T) {
 
 	r := NewUnboxer(node, &nonce, &key)
 
-	want := "Hello, Tests!"
+	want := strings.Repeat("Hello, Tests!", cnt)
 	if _, err := fmt.Fprintln(node, want); err != nil {
 		t.Fatal(err)
 	}
 
 	s := bufio.NewScanner(r)
-	got := s.Text()
-
-	if got != want {
-		t.Fatalf("test data missmatch. got: %q", got)
+	for s.Scan() {
+		got := s.Text()
+		t.Log(got)
+		if got == want {
+			break
+		}
+		t.Error("test data missmatch! got:%q", got)
 	}
+
 }
