@@ -17,7 +17,8 @@ import (
 
 // State is the state each peer holds during the handshake
 type State struct {
-	appKey, appMac, secHash []byte
+	appKey, secHash           []byte
+	localAppMac, remoteAppMac []byte
 
 	localExchange  CurveKeyPair
 	local          EdKeyPair
@@ -78,8 +79,8 @@ func newState(appKey []byte, local EdKeyPair) (*State, error) {
 func (s *State) createChallenge() []byte {
 	appMacr := hmac.New(sha512.New, s.appKey[:32])
 	appMacr.Write(s.localExchange.Public[:])
-	s.appMac = appMacr.Sum(nil)[:32]
-	return append(s.appMac, s.localExchange.Public[:]...)
+	s.localAppMac = appMacr.Sum(nil)[:32]
+	return append(s.localAppMac, s.localExchange.Public[:]...)
 }
 
 // verifyChallenge returns whether the passed buffer is valid
@@ -92,7 +93,7 @@ func (s *State) verifyChallenge(ch []byte) bool {
 	ok := hmac.Equal(appMac.Sum(nil)[:32], mac)
 
 	copy(s.remoteExchange.Public[:], remoteEphPubKey)
-	s.appMac = mac
+	s.remoteAppMac = mac
 
 	var sec [32]byte
 	curve25519.ScalarMult(&sec, &s.localExchange.Secret, &s.remoteExchange.Public)
@@ -267,7 +268,7 @@ func (s *State) GetBoxstreamEncKeys() ([32]byte, [24]byte) {
 	copy(enKey[:], h.Sum(nil))
 
 	var nonce [24]byte
-	copy(nonce[:], s.appMac)
+	copy(nonce[:], s.remoteAppMac)
 	return enKey, nonce
 }
 
@@ -282,6 +283,6 @@ func (s *State) GetBoxstreamDecKeys() ([32]byte, [24]byte) {
 	copy(deKey[:], h.Sum(nil))
 
 	var nonce [24]byte
-	copy(nonce[:], s.appMac)
+	copy(nonce[:], s.localAppMac)
 	return deKey, nonce
 }
