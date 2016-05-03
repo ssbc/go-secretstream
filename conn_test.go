@@ -65,13 +65,13 @@ func TestAuth(t *testing.T) {
 	ch := make(chan error, 2)
 
 	go func() {
-		err := Server(*serverState, rwServer)
+		err := Server(serverState, rwServer)
 		ch <- err
 		wServer.Close()
 	}()
 
 	go func() {
-		err := Client(*clientState, rwClient)
+		err := Client(clientState, rwClient)
 		ch <- err
 		wClient.Close()
 	}()

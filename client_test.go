@@ -57,7 +57,7 @@ func TestClient(t *testing.T) {
 		t.Fatal("error making server state:", err)
 	}
 
-	if err := Client(*clientState, server); err != nil {
+	if err := Client(clientState, server); err != nil {
 		t.Fatal(err)
 	}
 

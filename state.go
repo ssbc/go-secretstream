@@ -17,7 +17,7 @@ import (
 
 // State is the state each peer holds during the handshake
 type State struct {
-	appKey, remoteAppMac, secHash []byte
+	appKey, appMac, secHash []byte
 
 	localExchange  CurveKeyPair
 	local          EdKeyPair
@@ -76,9 +76,10 @@ func newState(appKey []byte, local EdKeyPair) (*State, error) {
 
 // createChallenge returns a buffer with a challenge
 func (s *State) createChallenge() []byte {
-	appMac := hmac.New(sha512.New, s.appKey[:32])
-	appMac.Write(s.localExchange.Public[:])
-	return append(appMac.Sum(nil)[:32], s.localExchange.Public[:]...)
+	appMacr := hmac.New(sha512.New, s.appKey[:32])
+	appMacr.Write(s.localExchange.Public[:])
+	s.appMac = appMacr.Sum(nil)[:32]
+	return append(s.appMac, s.localExchange.Public[:]...)
 }
 
 // verifyChallenge returns whether the passed buffer is valid
@@ -91,7 +92,7 @@ func (s *State) verifyChallenge(ch []byte) bool {
 	ok := hmac.Equal(appMac.Sum(nil)[:32], mac)
 
 	copy(s.remoteExchange.Public[:], remoteEphPubKey)
-	s.remoteAppMac = mac
+	s.appMac = mac
 
 	var sec [32]byte
 	curve25519.ScalarMult(&sec, &s.localExchange.Secret, &s.remoteExchange.Public)
@@ -253,4 +254,34 @@ func (s *State) cleanSecrets() {
 	copy(s.secret2[:], zeros[:])
 	copy(s.secret3[:], zeros[:])
 	copy(s.localExchange.Secret[:], zeros[:])
+}
+
+func (s *State) GetBoxstreamEncKeys() ([32]byte, [24]byte) {
+	// TODO: error before cleanSecrets() has been called?
+
+	log.Println("EncKeys:", s.String())
+	var enKey [32]byte
+	h := sha256.New()
+	h.Write(s.secret[:])
+	h.Write(s.remotePublic[:])
+	copy(enKey[:], h.Sum(nil))
+
+	var nonce [24]byte
+	copy(nonce[:], s.appMac)
+	return enKey, nonce
+}
+
+func (s *State) GetBoxstreamDecKeys() ([32]byte, [24]byte) {
+	// TODO: error before cleanSecrets() has been called?
+
+	log.Println("DecKeys:", s.String())
+	var deKey [32]byte
+	h := sha256.New()
+	h.Write(s.secret[:])
+	h.Write(s.local.Public[:])
+	copy(deKey[:], h.Sum(nil))
+
+	var nonce [24]byte
+	copy(nonce[:], s.appMac)
+	return deKey, nonce
 }

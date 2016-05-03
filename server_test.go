@@ -39,7 +39,7 @@ func TestServer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := Server(*serverState, client); err != nil {
+	if err := Server(serverState, client); err != nil {
 		t.Fatal(err)
 	}
 

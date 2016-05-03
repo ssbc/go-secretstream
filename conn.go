@@ -20,7 +20,7 @@ const ServerAuthLength = 16 + 64
 const MACLength = 16
 
 // Client shakes hands using the cryptographic identity specified in s using conn in the client role
-func Client(state State, conn io.ReadWriter) (err error) {
+func Client(state *State, conn io.ReadWriter) (err error) {
 	var n int
 	/*
 		defer func() {
@@ -91,7 +91,7 @@ func Client(state State, conn io.ReadWriter) (err error) {
 }
 
 // Server shakes hands using the cryptographic identity specified in s using conn in the server role
-func Server(state State, conn io.ReadWriter) (err error) {
+func Server(state *State, conn io.ReadWriter) (err error) {
 	var n int
 	defer func() {
 		log.Println("server: returned", err)
