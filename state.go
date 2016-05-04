@@ -2,7 +2,6 @@ package shs
 
 import (
 	"bytes"
-	"log"
 
 	"crypto/hmac"
 	"crypto/rand"
@@ -157,7 +156,6 @@ func (s *State) verifyClientAuth(data []byte) bool {
 	var ok bool
 	s.hello, ok = box.OpenAfterPrecomputation(s.hello, data, &nonce, &s.secret2)
 	if !ok {
-		log.Println("server/VerifyClientAuth: couldn't open box")
 		return false
 	}
 
@@ -171,7 +169,6 @@ func (s *State) verifyClientAuth(data []byte) bool {
 	sigMsg.Write(s.local.Public[:])
 	sigMsg.Write(s.secHash)
 	if !ed25519.Verify(&public, sigMsg.Bytes(), &sig) {
-		log.Println("server/VerifyClientAuth: couldn't verify sig")
 		return false
 	}
 
@@ -225,7 +222,6 @@ func (s *State) verifyServerAccept(boxedOkay []byte) bool {
 	out := make([]byte, 0, len(boxedOkay)-16)
 	out, ok := box.OpenAfterPrecomputation(out, boxedOkay, &nonce, &s.secret3)
 	if !ok {
-		log.Println("client/VerifyServerAccept: couldn't open s3 box")
 		return false
 	}
 
@@ -260,7 +256,6 @@ func (s *State) cleanSecrets() {
 func (s *State) GetBoxstreamEncKeys() ([32]byte, [24]byte) {
 	// TODO: error before cleanSecrets() has been called?
 
-	log.Println("EncKeys:", s.String())
 	var enKey [32]byte
 	h := sha256.New()
 	h.Write(s.secret[:])
@@ -275,7 +270,6 @@ func (s *State) GetBoxstreamEncKeys() ([32]byte, [24]byte) {
 func (s *State) GetBoxstreamDecKeys() ([32]byte, [24]byte) {
 	// TODO: error before cleanSecrets() has been called?
 
-	log.Println("DecKeys:", s.String())
 	var deKey [32]byte
 	h := sha256.New()
 	h.Write(s.secret[:])

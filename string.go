@@ -1,6 +1,8 @@
+// +build dev
+
 package shs
 
-/* nice for debugging purposes. no production code
+// nice for debugging purposes. no production code
 import (
 	"bytes"
 	"encoding/hex"
@@ -74,4 +76,3 @@ func (s *State) String() string {
 	buf.WriteString("\n}")
 	return buf.String()
 }
-*/
