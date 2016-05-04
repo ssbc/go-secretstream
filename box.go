@@ -5,15 +5,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
-	"os"
 
 	"golang.org/x/crypto/nacl/secretbox"
 )
-
-func init() {
-	log.SetOutput(os.Stderr)
-}
 
 const (
 	HeaderLength   = 2 + 16 + 16
@@ -88,16 +82,11 @@ func (u *Unboxer) readerloop() {
 	for {
 		hdr = hdr[:0]
 		_, err := io.ReadFull(u.input, hdrBox)
-		log.Println("readerloop: read header")
 		if err != nil {
 			u.output.CloseWithError(err)
 			return
 		}
 
-		log.Printf("renderloop: header nonce is  %x\n", u.nonce)
-		log.Printf("readerloop: header secret is %x\n", u.secret)
-		log.Printf("readerloop: box is %x\n", hdrBox)
-		log.Printf("readerloop: box len %v\n", len(hdrBox))
 		hdr, ok = secretbox.Open(hdr, hdrBox, u.nonce, u.secret)
 		if !ok {
 			u.output.CloseWithError(fmt.Errorf("error opening header box"))
@@ -110,15 +99,11 @@ func (u *Unboxer) readerloop() {
 			return
 		}
 
-		log.Println("readerloop: opened header box. len:", len(hdr))
-		log.Printf("readerloop: header: %x\n", hdr)
 		n := binary.BigEndian.Uint16(hdr[:2])
 
 		buf := make([]byte, n+secretbox.Overhead)
 
 		tag := hdr[2:] // len(tag) == seceretbox.Overhead
-
-		log.Println("readerloop:", "n:", n, "tag len:", len(tag), "buf len", len(buf))
 
 		copy(buf[:secretbox.Overhead], tag)
 
@@ -128,15 +113,12 @@ func (u *Unboxer) readerloop() {
 			return
 		}
 
-		log.Println("readerloop: read body")
-
 		out := make([]byte, 0, n)
 		out, ok = secretbox.Open(out, buf, increment(u.nonce), u.secret)
 		if !ok {
 			u.output.CloseWithError(fmt.Errorf("error opening body box"))
 			return
 		}
-		log.Println("readerloop: opened body")
 
 		_, err = io.Copy(u.output, bytes.NewBuffer(out))
 		if err != nil {
@@ -144,7 +126,6 @@ func (u *Unboxer) readerloop() {
 			return
 		}
 		increment(u.nonce)
-		log.Println("readerloop: pkg decoded and fed to consumer")
 	}
 }
 
@@ -158,9 +139,7 @@ func (b *Boxer) loop() {
 	check := func(err error) {
 		if err != nil {
 			running = false
-			log.Println("boxer loop: closing:", err)
 			if err2 := b.input.CloseWithError(err); err2 != nil {
-				log.Println("boxer loop: couldn't close:", err2)
 			}
 		}
 	}
@@ -181,39 +160,30 @@ func (b *Boxer) loop() {
 		}
 		msg = msg[:n]
 
-		log.Printf("write: loop top. got: %d sent: %d", n, sentLen)
-
 		// buffer for box of current
 		boxed := secretbox.Seal(nil, msg, increment(&nonce2), b.secret)
 		// define and populate header
 		var hdrPlain = bytes.NewBuffer(nil)
 		err = binary.Write(hdrPlain, binary.BigEndian, uint16(len(msg)))
 		check(err)
-		log.Printf("writerloop: boxed: %x (%d)", boxed, len(boxed))
 
 		// slice mac from box
 		_, err = hdrPlain.Write(boxed[:16]) // ???
 		check(err)
 
-		log.Printf("writerloop: header nonce is  %x\n", &nonce1)
-		log.Printf("writerloop: header secret is %x\n", b.secret)
 		if eof {
 			hdrPlain = bytes.NewBuffer(final[:])
 		}
 		hdrBox := secretbox.Seal(nil, hdrPlain.Bytes(), &nonce1, b.secret)
-		log.Printf("writerloop: box is %x\n", hdrBox)
-		log.Printf("writerloop: box len %v\n", len(hdrBox))
 
 		increment(increment(&nonce1))
 		increment(&nonce2)
 
 		n, err = b.output.Write(hdrBox)
 		check(err)
-		log.Println("writer: wrote header; n is", n)
 		sentLen += n
 
 		n2, err := io.Copy(b.output, bytes.NewBuffer(boxed[secretbox.Overhead:]))
-		log.Println("writer: wrote body; n is", n2)
 		check(err)
 		sentLen += int(n2)
 
