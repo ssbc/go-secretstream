@@ -6,11 +6,11 @@ import (
 	"io"
 	"testing"
 
-	"github.com/keks/shs"
+	"github.com/cryptix/secretstream/secrethandshake"
 )
 
 var (
-	clientKeys, serverKeys shs.EdKeyPair
+	clientKeys, serverKeys *secrethandshake.EdKeyPair
 
 	clientSec, _ = base64.StdEncoding.DecodeString("Ws5HDF3Mj0H21PZx0TRjmfi59Fp/rynyELlXqjFwtbU=")
 	serverSec, _ = base64.StdEncoding.DecodeString("Xh2j3RVNpG6VEn7eoxhjrD/ksfI9Ddn4KR3ws6kIrGc=")
@@ -19,8 +19,8 @@ var (
 )
 
 func init() {
-	clientKeys, _ = shs.GenEdKeyPair(bytes.NewBuffer(clientSec))
-	serverKeys, _ = shs.GenEdKeyPair(bytes.NewBuffer(serverSec))
+	clientKeys, _ = secrethandshake.GenEdKeyPair(bytes.NewReader(clientSec))
+	serverKeys, _ = secrethandshake.GenEdKeyPair(bytes.NewReader(serverSec))
 
 	for i := range appKey {
 		nappKey[i] = ^appKey[i]
@@ -35,7 +35,7 @@ func TestConn(t *testing.T) {
 	clientConn := Conn{Writer: pwBack, Reader: prForth, conn: &noConn{}}
 
 	go func() {
-		server, err := ServerOnce(serverconn, serverKeys, appKey)
+		server, err := ServerOnce(serverconn, *serverKeys, appKey)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -56,7 +56,7 @@ func TestConn(t *testing.T) {
 		}
 	}()
 
-	client, err := Client(clientConn, clientKeys, appKey, serverKeys.Public)
+	client, err := Client(clientConn, *clientKeys, appKey, serverKeys.Public)
 	if err != nil {
 		t.Fatal(err)
 	}

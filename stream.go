@@ -5,8 +5,8 @@ import (
 	"net"
 
 	"github.com/agl/ed25519"
+	"github.com/cryptix/secretstream/secrethandshake"
 	"github.com/keks/boxstream"
-	"github.com/keks/shs"
 )
 
 func check(err error) {
@@ -15,11 +15,11 @@ func check(err error) {
 	}
 }
 
-func Client(conn net.Conn, secretKey shs.EdKeyPair, appKey []byte, pubKey [ed25519.PublicKeySize]byte) (net.Conn, error) {
-	state, err := shs.NewClientState(appKey, secretKey, pubKey)
+func Client(conn net.Conn, secretKey secrethandshake.EdKeyPair, appKey []byte, pubKey [ed25519.PublicKeySize]byte) (net.Conn, error) {
+	state, err := secrethandshake.NewClientState(appKey, secretKey, pubKey)
 	check(err)
 
-	check(shs.Client(state, conn))
+	check(secrethandshake.Client(state, conn))
 
 	en_k, en_n := state.GetBoxstreamEncKeys()
 	conn_w := boxstream.NewBoxer(conn, &en_n, &en_k)
@@ -33,12 +33,12 @@ func Client(conn net.Conn, secretKey shs.EdKeyPair, appKey []byte, pubKey [ed255
 	return boxed, nil
 }
 
-func ServerOnce(conn net.Conn, secretKey shs.EdKeyPair, appKey []byte) (net.Conn, error) {
+func ServerOnce(conn net.Conn, secretKey secrethandshake.EdKeyPair, appKey []byte) (net.Conn, error) {
 
-	state, err := shs.NewServerState(appKey, secretKey)
+	state, err := secrethandshake.NewServerState(appKey, secretKey)
 	check(err)
 
-	err = shs.Server(state, conn)
+	err = secrethandshake.Server(state, conn)
 	check(err)
 
 	en_k, en_n := state.GetBoxstreamEncKeys()

@@ -4,10 +4,10 @@ import (
 	"net"
 
 	"github.com/agl/ed25519"
-	"github.com/keks/shs"
+	"github.com/cryptix/secretstream/secrethandshake"
 )
 
-func Dial(network, addr string, keyPair shs.EdKeyPair, appKey []byte, remotePub [ed25519.PublicKeySize]byte) (net.Conn, error) {
+func Dial(network, addr string, keyPair secrethandshake.EdKeyPair, appKey []byte, remotePub [ed25519.PublicKeySize]byte) (net.Conn, error) {
 	conn, err := net.Dial(network, addr)
 	if err != nil {
 		return nil, err
@@ -17,18 +17,18 @@ func Dial(network, addr string, keyPair shs.EdKeyPair, appKey []byte, remotePub 
 }
 
 type listener struct {
-	l net.Listener
+	net.Listener
 
-	keyPair shs.EdKeyPair
+	keyPair secrethandshake.EdKeyPair
 	appKey  []byte
 }
 
 func (l *listener) Addr() net.Addr {
-	return Addr{l.Addr(), l.keyPair.Public[:]}
+	return Addr{l.Listener.Addr(), l.keyPair.Public[:]}
 }
 
 func (l *listener) Accept() (net.Conn, error) {
-	c, err := l.l.Accept()
+	c, err := l.Listener.Accept()
 	if err != nil {
 		return nil, err
 	}
@@ -36,11 +36,7 @@ func (l *listener) Accept() (net.Conn, error) {
 	return ServerOnce(c, l.keyPair, l.appKey)
 }
 
-func (l *listener) Close() error {
-	return l.Close()
-}
-
-func Listen(network, addr string, keyPair shs.EdKeyPair, appKey []byte) (net.Listener, error) {
+func Listen(network, addr string, keyPair secrethandshake.EdKeyPair, appKey []byte) (net.Listener, error) {
 	l, err := net.Listen(network, addr)
-	return &listener{l: l, keyPair: keyPair, appKey: appKey}, err
+	return &listener{Listener: l, keyPair: keyPair, appKey: appKey}, err
 }

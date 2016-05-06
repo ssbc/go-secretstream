@@ -13,7 +13,7 @@ func tcheck(t *testing.T, err error) {
 }
 
 func TestNet(t *testing.T) {
-	l, err := Listen("tcp", "localhost:19099", serverKeys, appKey)
+	l, err := Listen("tcp", "localhost:0", *serverKeys, appKey)
 	tcheck(t, err)
 
 	go func() {
@@ -39,7 +39,7 @@ func TestNet(t *testing.T) {
 		l.Close()
 	}()
 
-	client, err := Dial("tcp", "localhost:19099", clientKeys, appKey, serverKeys.Public)
+	client, err := Dial("tcp", l.Addr().String(), *clientKeys, appKey, serverKeys.Public)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,7 +1,6 @@
 package secretstream
 
 import (
-	"encoding/base64"
 	"io"
 	"log"
 	"net"
@@ -18,7 +17,7 @@ func (a Addr) Network() string {
 }
 
 func (a Addr) String() string {
-	return a.Addr.String() + ":" + base64.StdEncoding.EncodeToString(a.PubKey)
+	return a.Addr.String() // + ":" + base64.StdEncoding.EncodeToString(a.PubKey) // breaks dialing
 }
 
 type Conn struct {
