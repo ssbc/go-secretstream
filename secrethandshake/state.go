@@ -1,4 +1,4 @@
-package shs
+package secrethandshake
 
 import (
 	"bytes"
@@ -251,6 +251,10 @@ func (s *State) cleanSecrets() {
 	copy(s.secret2[:], zeros[:])
 	copy(s.secret3[:], zeros[:])
 	copy(s.localExchange.Secret[:], zeros[:])
+}
+
+func (s *State) Remote() []byte {
+	return s.remotePublic[:]
 }
 
 func (s *State) GetBoxstreamEncKeys() ([32]byte, [24]byte) {

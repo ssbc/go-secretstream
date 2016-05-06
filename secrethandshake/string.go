@@ -1,6 +1,6 @@
 // +build dev
 
-package shs
+package secrethandshake
 
 // nice for debugging purposes. no production code
 import (

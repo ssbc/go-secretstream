@@ -1,9 +1,11 @@
-package shs
+package secrethandshake
 
 import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/agl/ed25519"
 )
 
 // ChallengeLength is the length of a challenge message in bytes
@@ -17,6 +19,14 @@ const ServerAuthLength = 16 + 64
 
 // MACLength is the length of a MAC in bytes
 const MACLength = 16
+
+func GenEdKeyPair(r io.Reader) (*EdKeyPair, error) {
+	pubSrv, secSrv, err := ed25519.GenerateKey(r)
+	if err != nil {
+		return nil, err
+	}
+	return &EdKeyPair{*pubSrv, *secSrv}, nil
+}
 
 // Client shakes hands using the cryptographic identity specified in s using conn in the client role
 func Client(state *State, conn io.ReadWriter) (err error) {

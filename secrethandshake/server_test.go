@@ -1,4 +1,4 @@
-package shs
+package secrethandshake
 
 import (
 	"encoding/base64"

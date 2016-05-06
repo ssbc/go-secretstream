@@ -1,4 +1,4 @@
-package shs
+package secrethandshake
 
 import (
 	"io"
@@ -6,8 +6,6 @@ import (
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/agl/ed25519"
 )
 
 // StupidRandom always reads itself. Goal is determinism.
@@ -32,14 +30,14 @@ type rw struct {
 func TestAuth(t *testing.T) {
 	log.SetOutput(os.Stdout)
 
-	pubSrv, secSrv, err := ed25519.GenerateKey(StupidRandom(0))
+	keySrv, err := GenEdKeyPair(StupidRandom(0))
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
-	pubCli, secCli, err := ed25519.GenerateKey(StupidRandom(1))
+	keyClient, err := GenEdKeyPair(StupidRandom(1))
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	appKey := make([]byte, 32)
@@ -51,12 +49,12 @@ func TestAuth(t *testing.T) {
 	rwServer := rw{rServer, wServer}
 	rwClient := rw{rClient, wClient}
 
-	serverState, err := NewServerState(appKey, EdKeyPair{*pubSrv, *secSrv})
+	serverState, err := NewServerState(appKey, *keySrv)
 	if err != nil {
 		t.Error("error making server state:", err)
 	}
 
-	clientState, err := NewClientState(appKey, EdKeyPair{*pubCli, *secCli}, *pubSrv)
+	clientState, err := NewClientState(appKey, *keyClient, keySrv.Public)
 	if err != nil {
 		t.Error("error making client state:", err)
 	}
