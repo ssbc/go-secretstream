@@ -36,20 +36,14 @@ func TestConn(t *testing.T) {
 
 	go func() {
 		server, err := ServerOnce(serverconn, *serverKeys, appKey)
-		if err != nil {
-			t.Fatal(err)
-		}
+		tcheck(t, err)
 
 		_, err = server.Write(appKey)
-		if err != nil {
-			t.Fatal(err)
-		}
+		tcheck(t, err)
 
 		buf := make([]byte, len(appKey))
 		_, err = io.ReadFull(server, buf)
-		if err != nil {
-			t.Fatal(err)
-		}
+		tcheck(t, err)
 
 		if !bytes.Equal(buf, nappKey) {
 			t.Fatal("server read wrong bytes")
@@ -63,16 +57,12 @@ func TestConn(t *testing.T) {
 
 	buf := make([]byte, len(appKey))
 	_, err = io.ReadFull(client, buf)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tcheck(t, err)
 
 	if !bytes.Equal(buf, appKey) {
 		t.Fatal("client read wrong bytes")
 	}
 
 	_, err = client.Write(nappKey)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tcheck(t, err)
 }
