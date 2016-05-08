@@ -5,8 +5,8 @@ import (
 	"net"
 
 	"github.com/agl/ed25519"
+	"github.com/cryptix/secretstream/boxstream"
 	"github.com/cryptix/secretstream/secrethandshake"
-	"github.com/keks/boxstream"
 )
 
 func check(err error) {
