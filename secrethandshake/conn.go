@@ -1,12 +1,12 @@
 package secrethandshake
 
 import (
+	"bytes"
 	"crypto/rand"
-	"errors"
-	"fmt"
 	"io"
 
 	"github.com/agl/ed25519"
+	"gopkg.in/errgo.v1"
 )
 
 // ChallengeLength is the length of a challenge message in bytes
@@ -36,48 +36,40 @@ func GenEdKeyPair(r io.Reader) (*EdKeyPair, error) {
 
 // Client shakes hands using the cryptographic identity specified in s using conn in the client role
 func Client(state *State, conn io.ReadWriter) (err error) {
-	var n int
-
 	// send challenge
-	n, err = conn.Write(state.createChallenge())
+	_, err = io.Copy(conn, bytes.NewReader(state.createChallenge()))
 	if err != nil {
-		return err
-	}
-	if n != ChallengeLength {
-		return errors.New("wrong challenge length")
+		return errgo.Notef(err, "secrethandshake: sending challenge failed.")
 	}
 
 	// recv challenge
 	chalResp := make([]byte, ChallengeLength)
 	_, err = io.ReadFull(conn, chalResp)
 	if err != nil {
-		return err
+		return errgo.Notef(err, "secrethandshake: receiving challenge failed.")
 	}
 
 	// verify challenge
 	if !state.verifyChallenge(chalResp) {
-		return errors.New("Wrong protocol version?")
+		return errgo.New("secrethandshake: Wrong protocol version?")
 	}
 
 	// send authentication vector
-	n, err = conn.Write(state.createClientAuth())
+	_, err = io.Copy(conn, bytes.NewReader(state.createClientAuth()))
 	if err != nil {
-		return err
-	}
-	if n != ClientAuthLength {
-		return errors.New("wrong client auth length")
+		return errgo.Notef(err, "secrethandshake: sending client auth failed.")
 	}
 
 	// recv authentication vector
 	boxedSig := make([]byte, ServerAuthLength)
 	_, err = io.ReadFull(conn, boxedSig)
 	if err != nil {
-		return err
+		return errgo.Notef(err, "secrethandshake: receiving server auth failed")
 	}
 
 	// authenticate remote
 	if !state.verifyServerAccept(boxedSig) {
-		return errors.New("server not authenticated")
+		return errgo.New("secrethandshake: server not authenticated")
 	}
 
 	state.cleanSecrets()
@@ -86,48 +78,40 @@ func Client(state *State, conn io.ReadWriter) (err error) {
 
 // Server shakes hands using the cryptographic identity specified in s using conn in the server role
 func Server(state *State, conn io.ReadWriter) (err error) {
-	var n int
-
 	// recv challenge
 	challenge := make([]byte, ChallengeLength)
 	_, err = io.ReadFull(conn, challenge)
 	if err != nil {
-		return err
+		return errgo.Notef(err, "secrethandshake: receiving challenge failed")
 	}
 
 	// verify challenge
 	if !state.verifyChallenge(challenge) {
-		return errors.New("Wrong protocol version?")
+		return errgo.New("secrethandshake: Wrong protocol version?")
 	}
 
 	// send challenge
-	n, err = conn.Write(state.createChallenge())
+	_, err = io.Copy(conn, bytes.NewReader(state.createChallenge()))
 	if err != nil {
-		return err
-	}
-	if n != ChallengeLength {
-		return errors.New("wrong server challenge length")
+		return errgo.Notef(err, "secrethandshake: sending server challenge failed.")
 	}
 
 	// recv authentication vector
 	hello := make([]byte, ClientAuthLength)
 	_, err = io.ReadFull(conn, hello)
 	if err != nil {
-		return err
+		return errgo.Notef(err, "secrethandshake: receiving client hello failed")
 	}
 
 	// authenticate remote
 	if !state.verifyClientAuth(hello) {
-		return errors.New("client not authenticated")
+		return errgo.New("secrethandshake: client not authenticated")
 	}
 
 	// accept
-	n, err = conn.Write(state.createServerAccept())
+	_, err = io.Copy(conn, bytes.NewReader(state.createServerAccept()))
 	if err != nil {
-		return err
-	}
-	if n != ServerAuthLength {
-		return fmt.Errorf("wrong server auth length: %v", n)
+		return errgo.Notef(err, "secrethandshake: sending server auth accept failed.")
 	}
 
 	state.cleanSecrets()

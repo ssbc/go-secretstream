@@ -16,9 +16,10 @@ func check(err error) {
 	}
 }
 
-func mustLoadKeyPair(fname string) EdKeyPair {
+func mustLoadTestKeyPair(fname string) EdKeyPair {
 	f, err := os.Open(fname)
 	check(err)
+	defer f.Close()
 
 	var t struct {
 		PublicKey, SecretKey string
@@ -49,8 +50,8 @@ func TestClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	kpBob := mustLoadKeyPair("key.bob.json")
-	kpAlice := mustLoadKeyPair("key.alice.json")
+	kpBob := mustLoadTestKeyPair("key.bob.json")
+	kpAlice := mustLoadTestKeyPair("key.alice.json")
 
 	clientState, err := NewClientState(appKey, kpAlice, kpBob.Public)
 	if err != nil {
