@@ -5,10 +5,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"net"
 	"testing"
 
 	"github.com/cryptix/secretstream/secrethandshake"
 )
+
+// test interface fullfilment
+var _ net.Listener = &Listener{nil, nil}
 
 var (
 	clientKeys, serverKeys *secrethandshake.EdKeyPair
@@ -49,7 +53,11 @@ func TestNet(t *testing.T) {
 	testData := "Hello, World!"
 
 	go func() {
-		c, err := l.Accept()
+		var (
+			c   net.Conn
+			err error
+		)
+		c, err = l.Accept()
 		tcheck(t, err)
 
 		_, err = c.Write(appKey)

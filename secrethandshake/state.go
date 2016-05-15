@@ -253,10 +253,12 @@ func (s *State) cleanSecrets() {
 	copy(s.localExchange.Secret[:], zeros[:])
 }
 
+// Remote returns the public key of the remote party
 func (s *State) Remote() []byte {
 	return s.remotePublic[:]
 }
 
+// GetBoxstreamEncKeys returns the encryption key and nonce suitable for boxstream
 func (s *State) GetBoxstreamEncKeys() ([32]byte, [24]byte) {
 	// TODO: error before cleanSecrets() has been called?
 
@@ -271,6 +273,7 @@ func (s *State) GetBoxstreamEncKeys() ([32]byte, [24]byte) {
 	return enKey, nonce
 }
 
+// GetBoxstreamDecKeys returns the decryption key and nonce suitable for boxstream
 func (s *State) GetBoxstreamDecKeys() ([32]byte, [24]byte) {
 	// TODO: error before cleanSecrets() has been called?
 

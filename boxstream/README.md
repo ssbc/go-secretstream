@@ -1,4 +1,4 @@
-# box-stream
+# boxstream
 
-This package aims to implement https://github.com/dominictarr/pull-box-stream in Go
+This package implements [pull-box-stream](https://github.com/dominictarr/pull-box-stream) in Go
 (without the pull).

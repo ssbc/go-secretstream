@@ -7,16 +7,20 @@ import (
 	"github.com/cryptix/secretstream/secrethandshake"
 )
 
+// Server can create net.Listeners
 type Server struct {
 	keyPair secrethandshake.EdKeyPair
 	appKey  []byte
 }
 
+// NewServer returns a Server which uses the passed keyPair and appKey
 func NewServer(keyPair secrethandshake.EdKeyPair, appKey []byte) (*Server, error) {
 	return &Server{keyPair: keyPair, appKey: appKey}, nil
 }
 
+// Listen opens a net.Listener which accepts only secrethandshake connections
 func (s Server) Listen(n, a string) (net.Listener, error) {
+	// TODO(cryptix): refuse anything that isn't tcp
 	l, err := net.Listen(n, a)
 	if err != nil {
 		return nil, err
@@ -25,6 +29,7 @@ func (s Server) Listen(n, a string) (net.Listener, error) {
 	return &Listener{l: l, s: &s}, nil
 }
 
+// ServerOnce wraps the passed net.Conn into a boxstream if the handshake is successful
 func ServerOnce(conn net.Conn, secretKey secrethandshake.EdKeyPair, appKey []byte) (net.Conn, error) {
 	state, err := secrethandshake.NewServerState(appKey, secretKey)
 	if err != nil {
@@ -35,14 +40,18 @@ func ServerOnce(conn net.Conn, secretKey secrethandshake.EdKeyPair, appKey []byt
 	if err != nil {
 		return nil, err
 	}
-	en_k, en_n := state.GetBoxstreamEncKeys()
-	conn_w := boxstream.NewBoxer(conn, &en_n, &en_k)
 
-	de_k, de_n := state.GetBoxstreamDecKeys()
-	conn_r := boxstream.NewUnboxer(conn, &de_n, &de_k)
+	enKey, enNonce := state.GetBoxstreamEncKeys()
+	deKey, deNonce := state.GetBoxstreamDecKeys()
 
 	remote := state.Remote()
-	boxed := Conn{conn_r, conn_w, conn, secretKey.Public[:], remote[:]}
+	boxed := Conn{
+		Reader: boxstream.NewUnboxer(conn, &deNonce, &deKey),
+		Writer: boxstream.NewBoxer(conn, &enNonce, &enKey),
+		conn:   conn,
+		local:  secretKey.Public[:],
+		remote: remote[:],
+	}
 
 	return boxed, nil
 }

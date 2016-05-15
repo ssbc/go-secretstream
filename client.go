@@ -8,11 +8,13 @@ import (
 	"github.com/cryptix/secretstream/secrethandshake"
 )
 
+// Client can dial secret-handshake server endpoints
 type Client struct {
 	appKey []byte
 	kp     secrethandshake.EdKeyPair
 }
 
+// NewClient creates a new Client with the passed keyPair and appKey
 func NewClient(kp secrethandshake.EdKeyPair, appKey []byte) (*Client, error) {
 	// TODO: consistancy check?!..
 	return &Client{
@@ -21,8 +23,11 @@ func NewClient(kp secrethandshake.EdKeyPair, appKey []byte) (*Client, error) {
 	}, nil
 }
 
+// NewDialer returns a net.Dial-esque dialer that does a secrethandshake key exchange
+// and wraps the underlying connection into a boxstream
 func (c *Client) NewDialer(pubKey [ed25519.PublicKeySize]byte) (Dialer, error) {
 	return func(n, a string) (net.Conn, error) {
+		// TODO(cryptix): refuse non-tcp connections
 		conn, err := net.Dial(n, a)
 		if err != nil {
 			return nil, err
@@ -36,12 +41,12 @@ func (c *Client) NewDialer(pubKey [ed25519.PublicKeySize]byte) (Dialer, error) {
 			return nil, err
 		}
 
-		en_k, en_n := state.GetBoxstreamEncKeys()
-		de_k, de_n := state.GetBoxstreamDecKeys()
+		enKey, enNonce := state.GetBoxstreamEncKeys()
+		deKey, deNonce := state.GetBoxstreamDecKeys()
 
 		boxed := Conn{
-			Reader: boxstream.NewUnboxer(conn, &de_n, &de_k),
-			Writer: boxstream.NewBoxer(conn, &en_n, &en_k),
+			Reader: boxstream.NewUnboxer(conn, &deNonce, &deKey),
+			Writer: boxstream.NewBoxer(conn, &enNonce, &enKey),
 			conn:   conn,
 			local:  c.kp.Public[:],
 			remote: state.Remote(),

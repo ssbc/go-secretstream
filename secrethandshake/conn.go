@@ -21,6 +21,8 @@ const ServerAuthLength = 16 + 64
 // MACLength is the length of a MAC in bytes
 const MACLength = 16
 
+// GenEdKeyPair generates a ed25519 keyPair using the passed reader
+// if r == nil it uses crypto/rand.Reader
 func GenEdKeyPair(r io.Reader) (*EdKeyPair, error) {
 	if r == nil {
 		r = rand.Reader
@@ -68,7 +70,7 @@ func Client(state *State, conn io.ReadWriter) (err error) {
 
 	// recv authentication vector
 	boxedSig := make([]byte, ServerAuthLength)
-	n, err = io.ReadFull(conn, boxedSig)
+	_, err = io.ReadFull(conn, boxedSig)
 	if err != nil {
 		return err
 	}

@@ -30,7 +30,8 @@ func TestInterop_WriteToJS(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
+	_, err = io.ReadFull(rand.Reader, nonce[:])
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -55,7 +56,7 @@ func TestInterop_WriteToJS(t *testing.T) {
 		if got == want {
 			break
 		}
-		t.Error("test data missmatch! got:%q", got)
+		t.Errorf("test data missmatch! got:%q", got)
 	}
 }
 
@@ -94,7 +95,7 @@ func TestInterop_ReadFromJS(t *testing.T) {
 		if got == want {
 			break
 		}
-		t.Error("test data missmatch! got:%q", got)
+		t.Errorf("test data missmatch! got:%q", got)
 	}
 
 }
