@@ -2,14 +2,13 @@ package secretstream
 
 import (
 	"io"
-	"log"
 	"net"
 	"time"
 )
 
 type Addr struct {
 	net.Addr
-	PubKey []byte
+	pubKey []byte
 }
 
 func (a Addr) Network() string {
@@ -18,6 +17,10 @@ func (a Addr) Network() string {
 
 func (a Addr) String() string {
 	return a.Addr.String() // + ":" + base64.StdEncoding.EncodeToString(a.PubKey) // breaks dialing
+}
+
+func (a Addr) PubKey() []byte {
+	return a.pubKey
 }
 
 type Conn struct {
@@ -42,16 +45,13 @@ func (c Conn) RemoteAddr() net.Addr {
 }
 
 func (c Conn) SetDeadline(t time.Time) error {
-	log.Println("WARNING: SetDeadline() not sure this works")
 	return c.conn.SetDeadline(t)
 }
 
 func (c Conn) SetReadDeadline(t time.Time) error {
-	log.Println("WARNING: SetReadDeadline() not sure this works")
 	return c.conn.SetReadDeadline(t)
 }
 
 func (c Conn) SetWriteDeadline(t time.Time) error {
-	log.Println("WARNING: SetWriteDeadline() not sure this works")
 	return c.conn.SetWriteDeadline(t)
 }

@@ -1,42 +1,29 @@
 package secretstream
 
-import (
-	"net"
+import "net"
 
-	"github.com/agl/ed25519"
-	"github.com/cryptix/secretstream/secrethandshake"
-)
+type Dialer func(net, addr string) (net.Conn, error)
 
-func Dial(network, addr string, keyPair secrethandshake.EdKeyPair, appKey []byte, remotePub [ed25519.PublicKeySize]byte) (net.Conn, error) {
-	conn, err := net.Dial(network, addr)
+type Listener struct {
+	l net.Listener
+	s *Server
+}
+
+var _ net.Listener = Listener{}
+
+func (l Listener) Addr() net.Addr {
+	return Addr{l.l.Addr(), l.s.keyPair.Public[:]}
+}
+
+func (l Listener) Close() error {
+	return l.l.Close()
+}
+
+func (l Listener) Accept() (net.Conn, error) {
+	c, err := l.l.Accept()
 	if err != nil {
 		return nil, err
 	}
 
-	return Client(conn, keyPair, appKey, remotePub)
-}
-
-type listener struct {
-	net.Listener
-
-	keyPair secrethandshake.EdKeyPair
-	appKey  []byte
-}
-
-func (l *listener) Addr() net.Addr {
-	return Addr{l.Listener.Addr(), l.keyPair.Public[:]}
-}
-
-func (l *listener) Accept() (net.Conn, error) {
-	c, err := l.Listener.Accept()
-	if err != nil {
-		return nil, err
-	}
-
-	return ServerOnce(c, l.keyPair, l.appKey)
-}
-
-func Listen(network, addr string, keyPair secrethandshake.EdKeyPair, appKey []byte) (net.Listener, error) {
-	l, err := net.Listen(network, addr)
-	return &listener{Listener: l, keyPair: keyPair, appKey: appKey}, err
+	return ServerOnce(c, l.s.keyPair, l.s.appKey)
 }

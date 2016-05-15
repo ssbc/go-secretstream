@@ -1,6 +1,7 @@
 package secrethandshake
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +22,9 @@ const ServerAuthLength = 16 + 64
 const MACLength = 16
 
 func GenEdKeyPair(r io.Reader) (*EdKeyPair, error) {
+	if r == nil {
+		r = rand.Reader
+	}
 	pubSrv, secSrv, err := ed25519.GenerateKey(r)
 	if err != nil {
 		return nil, err
