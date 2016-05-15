@@ -2,6 +2,7 @@ package secretstream
 
 import (
 	"net"
+	"strings"
 
 	"github.com/cryptix/secretstream/boxstream"
 	"github.com/cryptix/secretstream/secrethandshake"
@@ -20,7 +21,9 @@ func NewServer(keyPair secrethandshake.EdKeyPair, appKey []byte) (*Server, error
 
 // Listen opens a net.Listener which accepts only secrethandshake connections
 func (s Server) Listen(n, a string) (net.Listener, error) {
-	// TODO(cryptix): refuse anything that isn't tcp
+	if !strings.HasPrefix(n, "tcp") {
+		return nil, ErrOnlyTCP
+	}
 	l, err := net.Listen(n, a)
 	if err != nil {
 		return nil, err

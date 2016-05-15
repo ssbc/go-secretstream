@@ -1,6 +1,12 @@
 package secretstream
 
-import "net"
+import (
+	"errors"
+	"net"
+)
+
+// ErrOnlyTCP is returned if a progrems tries to open a UDP socket through secretstream
+var ErrOnlyTCP = errors.New("secretstream: only TCP is supported")
 
 // Dialer is the same signature as net.Dial, there is no expoted interface for this
 type Dialer func(net, addr string) (net.Conn, error)
