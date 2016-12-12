@@ -169,11 +169,8 @@ func (s *State) verifyClientAuth(data []byte) bool {
 	s.hello = make([]byte, 0, len(data)-16)
 
 	var nonce [24]byte // always 0?
-	var ok bool
-	s.hello, ok = box.OpenAfterPrecomputation(s.hello, data, &nonce, &s.secret2)
-	if !ok {
-		return false
-	}
+	var openOk bool
+	s.hello, openOk = box.OpenAfterPrecomputation(s.hello, data, &nonce, &s.secret2)
 
 	var sig [ed25519.SignatureSize]byte
 	copy(sig[:], s.hello[:ed25519.SignatureSize])
@@ -184,12 +181,10 @@ func (s *State) verifyClientAuth(data []byte) bool {
 	sigMsg.Write(s.appKey)
 	sigMsg.Write(s.local.Public[:])
 	sigMsg.Write(s.secHash)
-	if !ed25519.Verify(&public, sigMsg.Bytes(), &sig) {
-		return false
-	}
+	verifyOk := ed25519.Verify(&public, sigMsg.Bytes(), &sig)
 
 	copy(s.remotePublic[:], public[:])
-	return true
+	return openOk && verifyOk
 }
 
 // createServerAccept returns a buffer containing a serverAccept message
@@ -236,10 +231,7 @@ func (s *State) verifyServerAccept(boxedOkay []byte) bool {
 
 	var nonce [24]byte // always 0?
 	out := make([]byte, 0, len(boxedOkay)-16)
-	out, ok := box.OpenAfterPrecomputation(out, boxedOkay, &nonce, &s.secret3)
-	if !ok {
-		return false
-	}
+	out, openOk := box.OpenAfterPrecomputation(out, boxedOkay, &nonce, &s.secret3)
 
 	var sig [ed25519.SignatureSize]byte
 	copy(sig[:], out)
@@ -249,7 +241,7 @@ func (s *State) verifyServerAccept(boxedOkay []byte) bool {
 	sigMsg.Write(s.hello[:])
 	sigMsg.Write(s.secHash)
 
-	return ed25519.Verify(&s.remotePublic, sigMsg.Bytes(), &sig)
+	return ed25519.Verify(&s.remotePublic, sigMsg.Bytes(), &sig) && openOk
 }
 
 // cleanSecrets overwrites all intermediate secrets and copies the final secret to s.secret
