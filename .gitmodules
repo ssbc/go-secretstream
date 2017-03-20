@@ -1,0 +1,3 @@
+[submodule "secrethandshake/test-vectors"]
+	path = secrethandshake/test-vectors
+	url = https://github.com/auditdrivencrypto/test-secret-handshake
