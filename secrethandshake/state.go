@@ -54,7 +54,7 @@ type EdKeyPair struct {
 	Secret [ed25519.PrivateKeySize]byte
 }
 
-// CurveKeyPair is a keypair for use with github.com/agl/ed25519
+// CurveKeyPair is a keypair for use with curve25519
 type CurveKeyPair struct {
 	Public [32]byte
 	Secret [32]byte
