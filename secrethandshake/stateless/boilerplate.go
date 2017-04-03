@@ -7,6 +7,7 @@ import (
 
 // TODO: only expose in tests?
 func (s *State) ToJsonState() *JsonState {
+
 	return &JsonState{
 		AppKey: hex.EncodeToString(s.appKey),
 		Local: localKey{
@@ -17,7 +18,7 @@ func (s *State) ToJsonState() *JsonState {
 			AppMac:    hex.EncodeToString(s.localAppMac),
 		},
 		Remote: remotePub{hex.EncodeToString(s.remotePublic[:])},
-		Random: "TODO",
+		Random: hex.EncodeToString(s.ephRandBuf.Bytes()),
 	}
 }
 
@@ -53,20 +54,7 @@ func JsonStateToOurState(s JsonState) (*State, error) {
 	return Initialize(
 		SetAppKey(s.AppKey),
 		localKeyPair,
-		EphemeralRand(strings.NewReader(s.Random)),
+		EphemeralRandFromHex(s.Random),
 		RemotePubFromHex(s.Remote.PublicKey),
 	)
-	/*return &State{
-
-		Local: Keys{
-
-
-			AppMac:    mustDecodeHex(s.Local.AppMac),
-		},
-		Remote: Keys{
-			PublicKey: mustDecodeHex(s.Remote.PublicKey),
-		},
-		Random: mustDecodeHex(s.Random),
-	}, converr
-	*/
 }

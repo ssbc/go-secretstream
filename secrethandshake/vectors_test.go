@@ -43,7 +43,7 @@ func TestVectors(t *testing.T) {
 			assert.Equal(t, resultState, *initState.ToJsonState())
 
 		default:
-			// t.Logf("unhandled case testing %d: %s", i, v["name"])
+			t.Logf("unhandled case testing %d: %s", i, v["name"])
 		}
 	}
 }

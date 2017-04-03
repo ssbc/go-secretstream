@@ -1,6 +1,7 @@
 package stateless
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha512"
@@ -30,8 +31,16 @@ type State struct {
 	ephKeyPair   CurveKeyPair
 	local        EdKeyPair
 	remotePublic [ed25519.PublicKeySize]byte
-	ephRand      io.Reader
-	localAppMac  []byte
+
+	localAppMac []byte
+
+	/* TODO: test only data
+	there might be a funky conditional compilation dance
+	to only include these fields in the test package
+	but first make the tests pass.
+	*/
+	ephRand    io.Reader
+	ephRandBuf bytes.Buffer // stores the bytes we read
 }
 
 type Option func(s *State) error
@@ -89,6 +98,18 @@ func EphemeralRand(r io.Reader) Option {
 	}
 }
 
+// EphemeralRandFromHex is only used for testing against known values
+func EphemeralRandFromHex(rand string) Option {
+	return func(s *State) error {
+		rbytes, err := hex.DecodeString(rand)
+		if err != nil {
+			return errors.Wrap(err, "EphemeralRandFromHex(): failed to decode rand bytes")
+		}
+		s.ephRand = io.TeeReader(bytes.NewReader(rbytes), &s.ephRandBuf)
+		return nil
+	}
+}
+
 func RemotePubFromHex(pub string) Option {
 	return func(s *State) error {
 		b, err := hex.DecodeString(pub)
@@ -120,10 +141,9 @@ func Initialize(opts ...Option) (*State, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Initialize(): failed to generate ephemeral key")
 	}
-	copy(s.ephKeyPair.Public[:], pubKey[:])
-	// if !extra25519.PublicKeyToCurve25519(&s.ephKeyPair.Public, pubKey) {
-	// 	return nil, errors.New("Initialize(): could not curvify pubkey")
-	// }
+	if !extra25519.PublicKeyToCurve25519(&s.ephKeyPair.Public, pubKey) {
+		return nil, errors.New("Initialize(): could not curvify pubkey")
+	}
 	extra25519.PrivateKeyToCurve25519(&s.ephKeyPair.Secret, secKey)
 
 	appMacr := hmac.New(sha512.New, s.appKey[:32])
