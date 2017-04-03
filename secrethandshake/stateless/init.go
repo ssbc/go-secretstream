@@ -32,7 +32,12 @@ type State struct {
 	local        EdKeyPair
 	remotePublic [ed25519.PublicKeySize]byte
 
-	localAppMac []byte
+	// transitional state
+	// TODO: maybe make dedicated state types for the different steps
+	ephKeyRemotePub           [32]byte
+	localAppMac, remoteAppMac []byte
+	secret, secret2, secret3  [32]byte
+	secHash                   []byte
 
 	/* TODO: test only data
 	there might be a funky conditional compilation dance

@@ -47,9 +47,9 @@ func TestVectors(t *testing.T) {
 
 			// TODO: very meh - could argue about initialized memory but..
 			ourState := *state.ToJsonState()
-			if i == 2 && ourState.Remote.PublicKey == "0000000000000000000000000000000000000000000000000000000000000000" {
-				ourState.Remote.PublicKey = ""
-			}
+			// if i == 2 && ourState.Remote.PublicKey == "0000000000000000000000000000000000000000000000000000000000000000" {
+			// 	ourState.Remote.PublicKey = ""
+			// }
 			assert.Equal(t, resultState, ourState, "init test %d", i)
 
 		case "createChallenge":
@@ -57,6 +57,16 @@ func TestVectors(t *testing.T) {
 			assert.Equal(t, v["result"], hex.EncodeToString(challenge))
 
 		case "verifyChallenge":
+
+			challenge, err := hex.DecodeString(args[1].(string))
+			assert.Nil(t, err, "verifyChallenge test %d", i)
+			nextState := stateless.VerifyChallenge(state, challenge)
+
+			var resultState stateless.JsonState
+			err = mapstructure.Decode(v["result"], &resultState)
+			assert.Nil(t, err, "verifyChallenge test %d", i)
+
+			assert.Equal(t, resultState, *nextState.ToJsonState(), "verifyChallenge test %d", i)
 
 		default:
 			t.Errorf("unhandled case testing %d: %s", i, v["name"])

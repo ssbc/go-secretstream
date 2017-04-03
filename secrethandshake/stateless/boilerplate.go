@@ -17,7 +17,11 @@ func (s *State) ToJsonState() *JsonState {
 			SecretKey: hex.EncodeToString(s.local.Secret[:]),
 			AppMac:    hex.EncodeToString(s.localAppMac),
 		},
-		Remote: remotePub{hex.EncodeToString(s.remotePublic[:])},
+		Remote: remoteKey{
+			PublicKey: strings.TrimLeft(hex.EncodeToString(s.remotePublic[:]), "0"), // Nasty.. we might have a real zero in the data but "" != "000000000000..." is also annoying
+			EphPubKey: strings.TrimLeft(hex.EncodeToString(s.ephKeyRemotePub[:]), "0"),
+			AppMac:    hex.EncodeToString(s.remoteAppMac),
+		},
 		Random: hex.EncodeToString(s.ephRandBuf.Bytes()),
 	}
 }
@@ -31,14 +35,16 @@ type localKey struct {
 	AppMac    string `mapstructure:"app_mac"`
 }
 
-type remotePub struct {
+type remoteKey struct {
 	PublicKey string `mapstructure:"publicKey"`
+	EphPubKey string `mapstructure:"kx_pk"`
+	AppMac    string `mapstructure:"app_mac"`
 }
 
 type JsonState struct {
 	AppKey string    `mapstructure:"app_key"`
 	Local  localKey  `mapstructure:"local"`
-	Remote remotePub `mapstructure:"remote"`
+	Remote remoteKey `mapstructure:"remote"`
 	Seed   string    `mapstructure:"seed"`
 	Random string    `mapstructure:"random"`
 }
@@ -50,7 +56,6 @@ func InitializeFromJSONState(s JsonState) (*State, error) {
 	} else {
 		localKeyPair = LocalKeyFromHex(s.Local.PublicKey, s.Local.SecretKey)
 	}
-
 	return Initialize(
 		SetAppKey(s.AppKey),
 		localKeyPair,
