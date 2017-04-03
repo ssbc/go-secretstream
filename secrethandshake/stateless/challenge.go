@@ -1,10 +1,13 @@
 package stateless
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/sha512"
 
+	"github.com/agl/ed25519"
+	"github.com/agl/ed25519/extra25519"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -37,4 +40,35 @@ func VerifyChallenge(state *State, ch []byte) *State {
 	} else {
 		return nil
 	}
+}
+
+func ClientVerifyChallenge(state *State, ch []byte) *State {
+	state = VerifyChallenge(state, ch)
+	if state == nil {
+		return nil
+	}
+
+	var cvSec, aBob [32]byte
+	extra25519.PrivateKeyToCurve25519(&cvSec, &state.local.Secret)
+	curve25519.ScalarMult(&aBob, &cvSec, &state.ephKeyRemotePub)
+	copy(state.aBob[:], aBob[:])
+
+	secHasher := sha256.New()
+	secHasher.Write(state.appKey)
+	secHasher.Write(state.secret[:])
+	secHasher.Write(state.aBob[:])
+	copy(state.secret2[:], secHasher.Sum(nil))
+
+	var sigMsg bytes.Buffer
+	sigMsg.Write(state.appKey)
+	sigMsg.Write(state.remotePublic[:])
+	sigMsg.Write(state.secHash)
+
+	sig := ed25519.Sign(&state.local.Secret, sigMsg.Bytes())
+
+	var helloBuf bytes.Buffer
+	helloBuf.Write(sig[:])
+	helloBuf.Write(state.local.Public[:])
+	state.hello = helloBuf.Bytes()
+	return state
 }

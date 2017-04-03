@@ -18,6 +18,16 @@ func (s *State) ToJsonState() *JsonState {
 		rephPubStr = ""
 	}
 
+	secStr := hex.EncodeToString(s.secret[:])
+	if secStr == "0000000000000000000000000000000000000000000000000000000000000000" {
+		secStr = ""
+	}
+
+	sec2Str := hex.EncodeToString(s.secret2[:])
+	if sec2Str == "0000000000000000000000000000000000000000000000000000000000000000" {
+		sec2Str = ""
+	}
+
 	return &JsonState{
 		AppKey: hex.EncodeToString(s.appKey),
 		Local: localKey{
@@ -26,13 +36,16 @@ func (s *State) ToJsonState() *JsonState {
 			PublicKey: hex.EncodeToString(s.local.Public[:]),
 			SecretKey: hex.EncodeToString(s.local.Secret[:]),
 			AppMac:    hex.EncodeToString(s.localAppMac),
+			Hello:     hex.EncodeToString(s.hello),
 		},
 		Remote: remoteKey{
 			PublicKey: rpubStr,
 			EphPubKey: rephPubStr,
 			AppMac:    hex.EncodeToString(s.remoteAppMac),
 		},
-		Random: hex.EncodeToString(s.ephRandBuf.Bytes()),
+		Random:  hex.EncodeToString(s.ephRandBuf.Bytes()),
+		Secret:  secStr,
+		Secret2: sec2Str,
 	}
 }
 
@@ -43,6 +56,7 @@ type localKey struct {
 	PublicKey string `mapstructure:"publicKey"`
 	SecretKey string `mapstructure:"secretKey"`
 	AppMac    string `mapstructure:"app_mac"`
+	Hello     string `mapstructure:"hello"`
 }
 
 type remoteKey struct {
@@ -52,11 +66,13 @@ type remoteKey struct {
 }
 
 type JsonState struct {
-	AppKey string    `mapstructure:"app_key"`
-	Local  localKey  `mapstructure:"local"`
-	Remote remoteKey `mapstructure:"remote"`
-	Seed   string    `mapstructure:"seed"`
-	Random string    `mapstructure:"random"`
+	AppKey  string    `mapstructure:"app_key"`
+	Local   localKey  `mapstructure:"local"`
+	Remote  remoteKey `mapstructure:"remote"`
+	Seed    string    `mapstructure:"seed"`
+	Random  string    `mapstructure:"random"`
+	Secret  string    `mapstructure:"secret"`
+	Secret2 string    `mapstructure:"secret2"`
 }
 
 func InitializeFromJSONState(s JsonState) (*State, error) {
@@ -71,5 +87,25 @@ func InitializeFromJSONState(s JsonState) (*State, error) {
 		localKeyPair,
 		EphemeralRandFromHex(s.Random),
 		RemotePubFromHex(s.Remote.PublicKey),
+		func(state *State) error {
+			if s.Local.Hello != "" {
+				var err error
+				state.hello, err = hex.DecodeString(s.Local.Hello)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		// func(state *State) error {
+		// 	if s.Secret2 != "" {
+		// 		s2, err := hex.DecodeString(s.Secret2)
+		// 		if err != nil {
+		// 			return err
+		// 		}
+		// 		copy(state.secret2[:], s2)
+		// 	}
+		// 	return nil
+		// },
 	)
 }

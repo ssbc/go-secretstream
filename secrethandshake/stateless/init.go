@@ -39,6 +39,9 @@ type State struct {
 	secret, secret2, secret3  [32]byte
 	secHash                   []byte
 
+	hello        []byte
+	aBob, bAlice [32]byte // better name? helloAlice, helloBob?
+
 	/* TODO: test only data
 	there might be a funky conditional compilation dance
 	to only include these fields in the test package

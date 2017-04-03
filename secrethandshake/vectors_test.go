@@ -21,7 +21,7 @@ func TestVectors(t *testing.T) {
 	assert.Nil(t, json.NewDecoder(dataf).Decode(&data))
 
 	for i, v := range data {
-		if i >= 4 {
+		if i >= 8 {
 			return
 		}
 
@@ -44,7 +44,6 @@ func TestVectors(t *testing.T) {
 			var resultState stateless.JsonState
 			err = mapstructure.Decode(v["result"], &resultState)
 			assert.Nil(t, err, "init test %d", i)
-
 			assert.Equal(t, resultState, *state.ToJsonState(), "init test %d", i)
 
 		case "createChallenge":
@@ -52,16 +51,26 @@ func TestVectors(t *testing.T) {
 			assert.Equal(t, v["result"], hex.EncodeToString(challenge))
 
 		case "verifyChallenge":
-
 			challenge, err := hex.DecodeString(args[1].(string))
 			assert.Nil(t, err, "verifyChallenge test %d", i)
 			nextState := stateless.VerifyChallenge(state, challenge)
-
 			var resultState stateless.JsonState
 			err = mapstructure.Decode(v["result"], &resultState)
 			assert.Nil(t, err, "verifyChallenge test %d", i)
-
 			assert.Equal(t, resultState, *nextState.ToJsonState(), "verifyChallenge test %d", i)
+
+		case "clientVerifyChallenge":
+			challenge, err := hex.DecodeString(args[1].(string))
+			assert.Nil(t, err, "clientVerifyChallenge test %d", i)
+			nextState := stateless.ClientVerifyChallenge(state, challenge)
+			var resultState stateless.JsonState
+			err = mapstructure.Decode(v["result"], &resultState)
+			assert.Nil(t, err, "clientVerifyChallenge test %d", i)
+			assert.Equal(t, resultState, *nextState.ToJsonState(), "clientVerifyChallenge test %d", i)
+
+		case "clientCreateAuth":
+			auth := stateless.ClientCreateAuth(state)
+			assert.Equal(t, v["result"], hex.EncodeToString(auth), "clientCreateAuth test %d", i)
 
 		default:
 			t.Errorf("unhandled case testing %d: %s", i, v["name"])
