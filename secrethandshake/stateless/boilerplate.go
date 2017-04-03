@@ -8,6 +8,16 @@ import (
 // TODO: only expose in tests?
 func (s *State) ToJsonState() *JsonState {
 
+	rpubStr := hex.EncodeToString(s.remotePublic[:])
+	if rpubStr == "0000000000000000000000000000000000000000000000000000000000000000" {
+		rpubStr = ""
+	}
+
+	rephPubStr := hex.EncodeToString(s.ephKeyRemotePub[:])
+	if rephPubStr == "0000000000000000000000000000000000000000000000000000000000000000" {
+		rephPubStr = ""
+	}
+
 	return &JsonState{
 		AppKey: hex.EncodeToString(s.appKey),
 		Local: localKey{
@@ -18,8 +28,8 @@ func (s *State) ToJsonState() *JsonState {
 			AppMac:    hex.EncodeToString(s.localAppMac),
 		},
 		Remote: remoteKey{
-			PublicKey: strings.TrimLeft(hex.EncodeToString(s.remotePublic[:]), "0"), // Nasty.. we might have a real zero in the data but "" != "000000000000..." is also annoying
-			EphPubKey: strings.TrimLeft(hex.EncodeToString(s.ephKeyRemotePub[:]), "0"),
+			PublicKey: rpubStr,
+			EphPubKey: rephPubStr,
 			AppMac:    hex.EncodeToString(s.remoteAppMac),
 		},
 		Random: hex.EncodeToString(s.ephRandBuf.Bytes()),

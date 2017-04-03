@@ -21,7 +21,7 @@ func TestVectors(t *testing.T) {
 	assert.Nil(t, json.NewDecoder(dataf).Decode(&data))
 
 	for i, v := range data {
-		if i >= 3 {
+		if i >= 4 {
 			return
 		}
 
@@ -45,12 +45,7 @@ func TestVectors(t *testing.T) {
 			err = mapstructure.Decode(v["result"], &resultState)
 			assert.Nil(t, err, "init test %d", i)
 
-			// TODO: very meh - could argue about initialized memory but..
-			ourState := *state.ToJsonState()
-			// if i == 2 && ourState.Remote.PublicKey == "0000000000000000000000000000000000000000000000000000000000000000" {
-			// 	ourState.Remote.PublicKey = ""
-			// }
-			assert.Equal(t, resultState, ourState, "init test %d", i)
+			assert.Equal(t, resultState, *state.ToJsonState(), "init test %d", i)
 
 		case "createChallenge":
 			challenge := stateless.CreateChallenge(state)
