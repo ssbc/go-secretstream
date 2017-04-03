@@ -43,7 +43,7 @@ type JsonState struct {
 	Random string    `mapstructure:"random"`
 }
 
-func JsonStateToOurState(s JsonState) (*State, error) {
+func InitializeFromJSONState(s JsonState) (*State, error) {
 	var localKeyPair Option
 	if s.Seed != "" {
 		localKeyPair = LocalKeyFromSeed(strings.NewReader(s.Seed))
