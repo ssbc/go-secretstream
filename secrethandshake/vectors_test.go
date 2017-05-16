@@ -21,7 +21,7 @@ func TestVectors(t *testing.T) {
 	assert.Nil(t, json.NewDecoder(dataf).Decode(&data))
 
 	for i, v := range data {
-		if i >= 8 {
+		if i >= 9 {
 			return
 		}
 
@@ -70,6 +70,16 @@ func TestVectors(t *testing.T) {
 		case "clientCreateAuth":
 			auth := stateless.ClientCreateAuth(state)
 			assert.Equal(t, v["result"], hex.EncodeToString(auth), "clientCreateAuth test %d", i)
+
+		case "serverVerifyAuth":
+			challenge, err := hex.DecodeString(args[1].(string))
+			assert.Nil(t, err, "serverVerifyAuth test %d", i)
+			nextState := stateless.ServerVerifyAuth(state, challenge)
+			assert.NotNil(t, nextState, "serverVerifyAuth test %d", i)
+			var resultState stateless.JsonState
+			err = mapstructure.Decode(v["result"], &resultState)
+			assert.Nil(t, err, "serverVerifyAuth test %d", i)
+			assert.Equal(t, resultState, *nextState.ToJsonState(), "serverVerifyAuth test %d", i)
 
 		default:
 			t.Errorf("unhandled case testing %d: %s", i, v["name"])

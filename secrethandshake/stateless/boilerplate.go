@@ -18,6 +18,7 @@ func (s *State) ToJsonState() *JsonState {
 	rpubStr := hex.EncodeToString(s.remotePublic[:])
 	rephPubStr := hex.EncodeToString(s.ephKeyRemotePub[:])
 	secStr := hex.EncodeToString(s.secret[:])
+	shStr := hex.EncodeToString(s.secHash[:])
 	sec2Str := hex.EncodeToString(s.secret2[:])
 	abobStr := hex.EncodeToString(s.aBob[:])
 
@@ -26,6 +27,7 @@ func (s *State) ToJsonState() *JsonState {
 		&rpubStr,
 		&rephPubStr,
 		&secStr,
+		&shStr,
 		&sec2Str,
 		&abobStr,
 	} {
@@ -49,6 +51,7 @@ func (s *State) ToJsonState() *JsonState {
 		},
 		Random:  hex.EncodeToString(s.ephRandBuf.Bytes()),
 		Secret:  secStr,
+		SecHash: shStr,
 		Secret2: sec2Str,
 		ABob:    abobStr,
 	}
@@ -77,6 +80,7 @@ type JsonState struct {
 	Seed    string    `mapstructure:"seed"`
 	Random  string    `mapstructure:"random"`
 	Secret  string    `mapstructure:"secret"`
+	SecHash string    `mapstructure:"shash"`
 	Secret2 string    `mapstructure:"secret2"`
 	ABob    string    `mapstructure:"a_bob"`
 }
@@ -103,6 +107,17 @@ func InitializeFromJSONState(s JsonState) (*State, error) {
 			}
 			return nil
 		},
+
+		func(state *State) error {
+			if s.Secret != "" {
+				s, err := hex.DecodeString(s.Secret)
+				if err != nil {
+					return err
+				}
+				copy(state.secret[:], s)
+			}
+			return nil
+		},
 		func(state *State) error {
 			if s.Secret2 != "" {
 				s2, err := hex.DecodeString(s.Secret2)
@@ -113,5 +128,40 @@ func InitializeFromJSONState(s JsonState) (*State, error) {
 			}
 			return nil
 		},
+		func(state *State) error {
+			if s.Remote.EphPubKey != "" {
+				r, err := hex.DecodeString(s.Remote.EphPubKey)
+				if err != nil {
+					return err
+				}
+				copy(state.ephKeyRemotePub[:], r)
+			}
+			return nil
+		},
+		func(state *State) error {
+			if s.SecHash != "" {
+				var err error
+				state.secHash, err = hex.DecodeString(s.SecHash)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
 	)
 }
+
+// WIP: DRY for the above
+// func fill(name, from string) Option {
+// 	return func(state *State) error {
+// 		reflect.ValueOf(state).FieldByName(name)
+// 		if from != "" {
+// 			d, err := hex.DecodeString(from)
+// 			if err != nil {
+// 				return err
+// 			}
+// 			copy(to, d)
+// 		}
+// 		return nil
+// 	}
+// }
