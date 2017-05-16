@@ -103,15 +103,15 @@ func InitializeFromJSONState(s JsonState) (*State, error) {
 			}
 			return nil
 		},
-		// func(state *State) error {
-		// 	if s.Secret2 != "" {
-		// 		s2, err := hex.DecodeString(s.Secret2)
-		// 		if err != nil {
-		// 			return err
-		// 		}
-		// 		copy(state.secret2[:], s2)
-		// 	}
-		// 	return nil
-		// },
+		func(state *State) error {
+			if s.Secret2 != "" {
+				s2, err := hex.DecodeString(s.Secret2)
+				if err != nil {
+					return err
+				}
+				copy(state.secret2[:], s2)
+			}
+			return nil
+		},
 	)
 }

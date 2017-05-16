@@ -40,7 +40,6 @@ func TestVectors(t *testing.T) {
 
 		switch v["name"] {
 		case "initialize":
-			// parse result
 			var resultState stateless.JsonState
 			err = mapstructure.Decode(v["result"], &resultState)
 			assert.Nil(t, err, "init test %d", i)

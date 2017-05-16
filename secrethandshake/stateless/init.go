@@ -141,7 +141,6 @@ func Initialize(opts ...Option) (*State, error) {
 	}
 
 	if s.ephRand == nil {
-		log.Println("using crypto/rand")
 		s.ephRand = rand.Reader
 	}
 
