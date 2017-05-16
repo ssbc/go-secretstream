@@ -33,13 +33,13 @@ func VerifyChallenge(state *State, ch []byte) *State {
 	secHasher := sha256.New()
 	secHasher.Write(state.secret[:])
 	state.secHash = secHasher.Sum(nil)
-	if ok {
-		// TODO: not fully functional
-		// it's not a copy of the original but the same pointer..
-		return state
-	} else {
-		return nil
+
+	if !ok { // do this last to not introduce timing sidechannels
+		state = nil
 	}
+	// TODO: not fully functional
+	// it's not a copy of the original but the same pointer..
+	return state
 }
 
 func ClientVerifyChallenge(state *State, ch []byte) *State {

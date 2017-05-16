@@ -5,27 +5,31 @@ import (
 	"strings"
 )
 
+func stripIfZero(s string) string {
+	if s == "0000000000000000000000000000000000000000000000000000000000000000" {
+		s = ""
+	}
+	return s
+}
+
 // TODO: only expose in tests?
 func (s *State) ToJsonState() *JsonState {
 
 	rpubStr := hex.EncodeToString(s.remotePublic[:])
-	if rpubStr == "0000000000000000000000000000000000000000000000000000000000000000" {
-		rpubStr = ""
-	}
-
 	rephPubStr := hex.EncodeToString(s.ephKeyRemotePub[:])
-	if rephPubStr == "0000000000000000000000000000000000000000000000000000000000000000" {
-		rephPubStr = ""
-	}
-
 	secStr := hex.EncodeToString(s.secret[:])
-	if secStr == "0000000000000000000000000000000000000000000000000000000000000000" {
-		secStr = ""
-	}
-
 	sec2Str := hex.EncodeToString(s.secret2[:])
-	if sec2Str == "0000000000000000000000000000000000000000000000000000000000000000" {
-		sec2Str = ""
+	abobStr := hex.EncodeToString(s.aBob[:])
+
+	// zero value means long sequence of "0000..."
+	for _, s := range []*string{
+		&rpubStr,
+		&rephPubStr,
+		&secStr,
+		&sec2Str,
+		&abobStr,
+	} {
+		*s = stripIfZero(*s)
 	}
 
 	return &JsonState{
@@ -46,6 +50,7 @@ func (s *State) ToJsonState() *JsonState {
 		Random:  hex.EncodeToString(s.ephRandBuf.Bytes()),
 		Secret:  secStr,
 		Secret2: sec2Str,
+		ABob:    abobStr,
 	}
 }
 
@@ -73,6 +78,7 @@ type JsonState struct {
 	Random  string    `mapstructure:"random"`
 	Secret  string    `mapstructure:"secret"`
 	Secret2 string    `mapstructure:"secret2"`
+	ABob    string    `mapstructure:"a_bob"`
 }
 
 func InitializeFromJSONState(s JsonState) (*State, error) {
