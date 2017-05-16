@@ -44,13 +44,13 @@ func VerifyChallenge(state *State, ch []byte) *State {
 
 func ClientVerifyChallenge(state *State, ch []byte) *State {
 	state = VerifyChallenge(state, ch)
-	if state == nil {
+	if state == nil { // TODO: yet another timing sidechannel?
 		return nil
 	}
 
-	var cvSec, aBob [32]byte
-	extra25519.PrivateKeyToCurve25519(&cvSec, &state.local.Secret)
-	curve25519.ScalarMult(&aBob, &cvSec, &state.ephKeyRemotePub)
+	var cvRemotePub, aBob [32]byte
+	extra25519.PublicKeyToCurve25519(&cvRemotePub, &state.remotePublic)
+	curve25519.ScalarMult(&aBob, &state.ephKeyPair.Secret, &cvRemotePub)
 	copy(state.aBob[:], aBob[:])
 
 	secHasher := sha256.New()
