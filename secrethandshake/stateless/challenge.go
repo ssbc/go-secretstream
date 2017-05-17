@@ -69,6 +69,6 @@ func ClientVerifyChallenge(state *State, ch []byte) *State {
 	var helloBuf bytes.Buffer
 	helloBuf.Write(sig[:])
 	helloBuf.Write(state.local.Public[:])
-	state.hello = helloBuf.Bytes()
+	state.localHello = helloBuf.Bytes()
 	return state
 }

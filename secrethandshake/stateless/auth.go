@@ -13,7 +13,7 @@ import (
 
 func ClientCreateAuth(state *State) []byte {
 	var n [24]byte
-	return box.SealAfterPrecomputation(nil, state.hello, &n, &state.secret2)
+	return box.SealAfterPrecomputation(nil, state.localHello, &n, &state.secret2)
 }
 
 func ServerVerifyAuth(state *State, data []byte) *State {
@@ -28,21 +28,21 @@ func ServerVerifyAuth(state *State, data []byte) *State {
 	secHasher.Write(state.aBob[:])
 	copy(state.secret2[:], secHasher.Sum(nil))
 
-	state.hello = make([]byte, 0, len(data)-16)
+	state.remoteHello = make([]byte, 0, len(data)-16)
 
 	var nonce [24]byte
 	var openOk bool
-	state.hello, openOk = box.OpenAfterPrecomputation(state.hello, data, &nonce, &state.secret2)
+	state.remoteHello, openOk = box.OpenAfterPrecomputation(state.remoteHello, data, &nonce, &state.secret2)
 
 	if !openOk { // don't panic on the next copy
 		log.Println("secretHandshake/ServerVerifyAuth: open not OK!!")
-		state.hello = make([]byte, len(data)-16)
+		state.remoteHello = make([]byte, len(data)-16)
 	}
 
 	var sig [ed25519.SignatureSize]byte
-	copy(sig[:], state.hello[:ed25519.SignatureSize])
+	copy(sig[:], state.remoteHello[:ed25519.SignatureSize])
 	var public [ed25519.PublicKeySize]byte
-	copy(public[:], state.hello[ed25519.SignatureSize:])
+	copy(public[:], state.remoteHello[ed25519.SignatureSize:])
 
 	var sigMsg bytes.Buffer
 	sigMsg.Write(state.appKey)

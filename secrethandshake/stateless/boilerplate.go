@@ -2,6 +2,8 @@ package stateless
 
 import (
 	"encoding/hex"
+	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -42,12 +44,13 @@ func (s *State) ToJsonState() *JsonState {
 			PublicKey: hex.EncodeToString(s.local.Public[:]),
 			SecretKey: hex.EncodeToString(s.local.Secret[:]),
 			AppMac:    hex.EncodeToString(s.localAppMac),
-			Hello:     hex.EncodeToString(s.hello),
+			Hello:     hex.EncodeToString(s.localHello),
 		},
 		Remote: remoteKey{
 			PublicKey: rpubStr,
 			EphPubKey: rephPubStr,
 			AppMac:    hex.EncodeToString(s.remoteAppMac),
+			Hello:     hex.EncodeToString(s.remoteHello),
 		},
 		Random:  hex.EncodeToString(s.ephRandBuf.Bytes()),
 		Secret:  secStr,
@@ -71,6 +74,7 @@ type remoteKey struct {
 	PublicKey string `mapstructure:"publicKey"`
 	EphPubKey string `mapstructure:"kx_pk"`
 	AppMac    string `mapstructure:"app_mac"`
+	Hello     string `mapstructure:"hello"`
 }
 
 type JsonState struct {
@@ -100,14 +104,23 @@ func InitializeFromJSONState(s JsonState) (*State, error) {
 		func(state *State) error {
 			if s.Local.Hello != "" {
 				var err error
-				state.hello, err = hex.DecodeString(s.Local.Hello)
+				state.localHello, err = hex.DecodeString(s.Local.Hello)
 				if err != nil {
 					return err
 				}
 			}
 			return nil
 		},
-
+		// func(state *State) error {
+		// 	if s.Remote.Hello != "" {
+		// 		d, err := hex.DecodeString(s.Remote.Hello)
+		// 		if err != nil {
+		// 			return err
+		// 		}
+		// 		copy(state.remoteHello[:], d)
+		// 	}
+		// 	return nil
+		// },
 		func(state *State) error {
 			if s.Secret != "" {
 				s, err := hex.DecodeString(s.Secret)
@@ -152,16 +165,24 @@ func InitializeFromJSONState(s JsonState) (*State, error) {
 }
 
 // WIP: DRY for the above
-// func fill(name, from string) Option {
-// 	return func(state *State) error {
-// 		reflect.ValueOf(state).FieldByName(name)
-// 		if from != "" {
-// 			d, err := hex.DecodeString(from)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			copy(to, d)
-// 		}
-// 		return nil
-// 	}
-// }
+func fill(field, value string) Option {
+	return func(s *State) error {
+		if value != "" {
+			b, err := hex.DecodeString(value)
+			if err != nil {
+				return err
+			}
+			t, ok := reflect.TypeOf(*s).FieldByName(field)
+			if !ok {
+				return fmt.Errorf("field not found")
+			}
+
+			fmt.Println("Len:", t.Type.Len())
+			const l = 32 // t.Type.Len()
+
+			v := reflect.ValueOf(*s).FieldByName(field).Interface().([l]uint8)
+			copy(v[:], b)
+		}
+		return nil
+	}
+}

@@ -36,10 +36,10 @@ type State struct {
 	// TODO: maybe make dedicated state types for the different steps
 	ephKeyRemotePub           [32]byte
 	localAppMac, remoteAppMac []byte
+	localHello, remoteHello   []byte
 	secret, secret2, secret3  [32]byte
 	secHash                   []byte
 
-	hello        []byte
 	aBob, bAlice [32]byte // better name? helloAlice, helloBob?
 
 	/* TODO: test only data
