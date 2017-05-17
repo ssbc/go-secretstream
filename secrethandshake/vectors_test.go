@@ -21,9 +21,6 @@ func TestVectors(t *testing.T) {
 	assert.Nil(t, json.NewDecoder(dataf).Decode(&data))
 
 	for i, v := range data {
-		if i >= 9 {
-			return
-		}
 
 		args := v["args"].([]interface{})
 		if len(args) < 1 {
@@ -53,6 +50,7 @@ func TestVectors(t *testing.T) {
 			challenge, err := hex.DecodeString(args[1].(string))
 			assert.Nil(t, err, "verifyChallenge test %d", i)
 			nextState := stateless.VerifyChallenge(state, challenge)
+			assert.NotNil(t, nextState, "verifyChallenge test %d", i)
 			var resultState stateless.JsonState
 			err = mapstructure.Decode(v["result"], &resultState)
 			assert.Nil(t, err, "verifyChallenge test %d", i)
@@ -80,9 +78,25 @@ func TestVectors(t *testing.T) {
 			err = mapstructure.Decode(v["result"], &expected)
 			assert.Nil(t, err, "serverVerifyAuth test %d", i)
 			derived = *nextState.ToJsonState()
-			// TODO: why?!
+			// TODO: why?! testing setup probably
 			derived.Remote.AppMac = "9e0986a9df0d04dc9884a58aa9f68cbd1690d0140a602d1ad4ba5599c4205596"
 			assert.Equal(t, expected, derived, "serverVerifyAuth test %d", i)
+
+		case "serverCreateAccept":
+			accept := stateless.ServerCreateAccept(state)
+			assert.Equal(t, v["result"], hex.EncodeToString(accept), "serverCreateAccept test %d", i)
+		case "clientVerifyAccept":
+			acc, err := hex.DecodeString(args[1].(string))
+			assert.Nil(t, err, "clientVerifyAccept test %d", i)
+			nextState := stateless.ClientVerifyAccept(state, acc)
+			assert.NotNil(t, nextState, "clientVerifyAccept test %d", i)
+			var resultState stateless.JsonState
+			err = mapstructure.Decode(v["result"], &resultState)
+			assert.Nil(t, err, "clientVerifyAccept test %d", i)
+			derived := *nextState.ToJsonState()
+			// TODO: why?! testing setup probably
+			derived.Remote.AppMac = "a7efd4c608bf19b20ceccee3af33d2df9fdc6dec05f11a383259875f9cf2e995"
+			assert.Equal(t, resultState, derived, "clientVerifyAccept test %d", i)
 
 		default:
 			t.Errorf("unhandled case testing %d: %s", i, v["name"])

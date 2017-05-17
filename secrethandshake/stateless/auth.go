@@ -50,6 +50,20 @@ func ServerVerifyAuth(state *State, data []byte) *State {
 	sigMsg.Write(state.secHash)
 	verifyOk := ed25519.Verify(&public, sigMsg.Bytes(), &sig)
 	copy(state.remotePublic[:], public[:])
+
+	var curveRemotePubKey [32]byte
+	extra25519.PublicKeyToCurve25519(&curveRemotePubKey, &state.remotePublic)
+	var bAlice [32]byte
+	curve25519.ScalarMult(&bAlice, &state.ephKeyPair.Secret, &curveRemotePubKey)
+	copy(state.bAlice[:], bAlice[:])
+
+	sh3 := sha256.New()
+	sh3.Write(state.appKey)
+	sh3.Write(state.secret[:])
+	sh3.Write(state.aBob[:])
+	sh3.Write(state.bAlice[:])
+	copy(state.secret3[:], sh3.Sum(nil))
+
 	if !(openOk && verifyOk) {
 		state = nil
 	}

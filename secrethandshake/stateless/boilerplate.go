@@ -22,15 +22,17 @@ func (s *State) ToJsonState() *JsonState {
 	secStr := hex.EncodeToString(s.secret[:])
 	shStr := hex.EncodeToString(s.secHash[:])
 	sec2Str := hex.EncodeToString(s.secret2[:])
+	sec3Str := hex.EncodeToString(s.secret3[:])
 	abobStr := hex.EncodeToString(s.aBob[:])
 
 	// zero value means long sequence of "0000..."
 	for _, s := range []*string{
 		&rpubStr,
 		&rephPubStr,
-		&secStr,
 		&shStr,
+		&secStr,
 		&sec2Str,
+		&sec3Str,
 		&abobStr,
 	} {
 		*s = stripIfZero(*s)
@@ -56,6 +58,7 @@ func (s *State) ToJsonState() *JsonState {
 		Secret:  secStr,
 		SecHash: shStr,
 		Secret2: sec2Str,
+		Secret3: sec3Str,
 		ABob:    abobStr,
 	}
 }
@@ -83,9 +86,10 @@ type JsonState struct {
 	Remote  remoteKey `mapstructure:"remote"`
 	Seed    string    `mapstructure:"seed"`
 	Random  string    `mapstructure:"random"`
-	Secret  string    `mapstructure:"secret"`
 	SecHash string    `mapstructure:"shash"`
+	Secret  string    `mapstructure:"secret"`
 	Secret2 string    `mapstructure:"secret2"`
+	Secret3 string    `mapstructure:"secret3"`
 	ABob    string    `mapstructure:"a_bob"`
 }
 
@@ -111,16 +115,26 @@ func InitializeFromJSONState(s JsonState) (*State, error) {
 			}
 			return nil
 		},
-		// func(state *State) error {
-		// 	if s.Remote.Hello != "" {
-		// 		d, err := hex.DecodeString(s.Remote.Hello)
-		// 		if err != nil {
-		// 			return err
-		// 		}
-		// 		copy(state.remoteHello[:], d)
-		// 	}
-		// 	return nil
-		// },
+		func(state *State) error {
+			if s.Remote.Hello != "" {
+				var err error
+				state.remoteHello, err = hex.DecodeString(s.Remote.Hello)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		func(state *State) error {
+			if s.ABob != "" {
+				data, err := hex.DecodeString(s.ABob)
+				if err != nil {
+					return err
+				}
+				copy(state.aBob[:], data)
+			}
+			return nil
+		},
 		func(state *State) error {
 			if s.Secret != "" {
 				s, err := hex.DecodeString(s.Secret)
@@ -141,6 +155,17 @@ func InitializeFromJSONState(s JsonState) (*State, error) {
 			}
 			return nil
 		},
+		func(state *State) error {
+			if s.Secret3 != "" {
+				s2, err := hex.DecodeString(s.Secret3)
+				if err != nil {
+					return err
+				}
+				copy(state.secret3[:], s2)
+			}
+			return nil
+		},
+
 		func(state *State) error {
 			if s.Remote.EphPubKey != "" {
 				r, err := hex.DecodeString(s.Remote.EphPubKey)
