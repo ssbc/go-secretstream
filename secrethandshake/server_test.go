@@ -23,6 +23,7 @@ import (
 
 	"github.com/cryptix/go/logging/logtest"
 	"github.com/cryptix/go/proc"
+	"github.com/cryptix/secretstream/secrethandshake/stateless"
 )
 
 func TestServer(t *testing.T) {
@@ -37,12 +38,9 @@ func TestServer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	appKey, err := base64.StdEncoding.DecodeString("IhrX11txvFiVzm+NurzHLCqUUe3xZXkPfODnp7WlMpk=")
-	if err != nil {
-		t.Fatal(err)
-	}
+	appKey := "IhrX11txvFiVzm+NurzHLCqUUe3xZXkPfODnp7WlMpk="
 
-	var kp EdKeyPair
+	var kp stateless.EdKeyPair
 	copy(kp.Public[:], pubServ)
 	copy(kp.Secret[:], secSrv)
 

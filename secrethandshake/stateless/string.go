@@ -16,7 +16,7 @@ along with secretstream.  If not, see <http://www.gnu.org/licenses/>.
 */
 // +build dev
 
-package secrethandshake
+package stateless
 
 // nice for debugging purposes. no production code
 import (
@@ -59,8 +59,8 @@ func (s *State) String() string {
 	buf.WriteString("\n\tlocalPublic: ")
 	buf.Write(localPublicHex)
 
-	localEphPublicHex := make([]byte, 2*len(s.localExchange.Public))
-	hex.Encode(localEphPublicHex, s.localExchange.Public[:])
+	localEphPublicHex := make([]byte, 2*len(s.ephKeyPair.Public))
+	hex.Encode(localEphPublicHex, s.ephKeyPair.Public[:])
 	buf.WriteString("\n\tlocalEphPublic: ")
 	buf.Write(localEphPublicHex)
 
@@ -69,8 +69,8 @@ func (s *State) String() string {
 	buf.WriteString("\n\tremotePublic: ")
 	buf.Write(remotePublicHex)
 
-	remoteEphPublicHex := make([]byte, 2*len(s.remoteExchange.Public))
-	hex.Encode(remoteEphPublicHex, s.remoteExchange.Public[:])
+	remoteEphPublicHex := make([]byte, 2*len(s.ephKeyRemotePub))
+	hex.Encode(remoteEphPublicHex, s.ephKeyRemotePub[:])
 	buf.WriteString("\n\tremoteEphPublic: ")
 	buf.Write(remoteEphPublicHex)
 
@@ -84,8 +84,8 @@ func (s *State) String() string {
 	buf.WriteString("\n\taBob: ")
 	buf.Write(aBobHex)
 
-	remoteHelloHex := make([]byte, 2*len(s.hello))
-	hex.Encode(remoteHelloHex, s.hello[:])
+	remoteHelloHex := make([]byte, 2*len(s.remoteHello))
+	hex.Encode(remoteHelloHex, s.remoteHello[:])
 	buf.WriteString("\n\tremoteHello: ")
 	buf.Write(remoteHelloHex)
 

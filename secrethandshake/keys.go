@@ -23,11 +23,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/cryptix/secretstream/secrethandshake/stateless"
 	"gopkg.in/errgo.v1"
 )
 
 // LoadSSBKeyPair parses an ssb secret file
-func LoadSSBKeyPair(fname string) (*EdKeyPair, error) {
+func LoadSSBKeyPair(fname string) (*stateless.EdKeyPair, error) {
 	f, err := os.Open(fname)
 	if err != nil {
 		return nil, errgo.Notef(err, "secrethandshake: could not open key file")
@@ -55,7 +56,7 @@ func LoadSSBKeyPair(fname string) (*EdKeyPair, error) {
 		return nil, errgo.Notef(err, "secrethandshake: base64 decode of private part failed.")
 	}
 
-	var kp EdKeyPair
+	var kp stateless.EdKeyPair
 	copy(kp.Public[:], public)
 	copy(kp.Secret[:], private)
 	return &kp, nil

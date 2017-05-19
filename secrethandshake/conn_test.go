@@ -18,6 +18,7 @@ along with secretstream.  If not, see <http://www.gnu.org/licenses/>.
 package secrethandshake
 
 import (
+	"encoding/base64"
 	"io"
 	"log"
 	"os"
@@ -57,8 +58,9 @@ func TestAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	appKey := make([]byte, 32)
-	io.ReadFull(StupidRandom(255), appKey)
+	akr := make([]byte, 32)
+	io.ReadFull(StupidRandom(255), akr)
+	appKey := base64.StdEncoding.EncodeToString(akr)
 
 	rServer, wClient := io.Pipe()
 	rClient, wServer := io.Pipe()
@@ -90,6 +92,7 @@ func TestAuth(t *testing.T) {
 		ch <- err
 		wClient.Close()
 	}()
+	t.Log("waiting")
 
 	// t.Error may only be called from this goroutine :/
 	if err = <-ch; err != nil {

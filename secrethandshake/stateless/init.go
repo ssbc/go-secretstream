@@ -1,3 +1,20 @@
+/*
+This file is part of secretstream.
+
+secretstream is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+secretstream is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with secretstream.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package stateless
 
 import (
@@ -8,6 +25,8 @@ import (
 	"encoding/hex"
 	"io"
 	"log"
+
+	"encoding/base64"
 
 	"github.com/agl/ed25519"
 	"github.com/agl/ed25519/extra25519"
@@ -54,12 +73,23 @@ type State struct {
 
 type Option func(s *State) error
 
-func SetAppKey(ak string) Option {
+func SetAppKeyFromB64(ak string) Option {
+	return func(s *State) error {
+		var err error
+		s.appKey, err = base64.StdEncoding.DecodeString(ak)
+		if err != nil {
+			return errors.Wrapf(err, "SetAppKeyFromB64(): failed to decode %q", ak)
+		}
+		return nil
+	}
+}
+
+func SetAppKeyFromHex(ak string) Option {
 	return func(s *State) error {
 		var err error
 		s.appKey, err = hex.DecodeString(ak)
 		if err != nil {
-			return errors.Wrapf(err, "SetAppKey(): failed to decode %q", ak)
+			return errors.Wrapf(err, "SetAppKeyFromHex(): failed to decode %q", ak)
 		}
 		return nil
 	}
@@ -116,6 +146,13 @@ func EphemeralRandFromHex(rand string) Option {
 			return errors.Wrap(err, "EphemeralRandFromHex(): failed to decode rand bytes")
 		}
 		s.ephRand = io.TeeReader(bytes.NewReader(rbytes), &s.ephRandBuf)
+		return nil
+	}
+}
+
+func RemotePub(pub [ed25519.PublicKeySize]byte) Option {
+	return func(s *State) error {
+		s.remotePublic = pub
 		return nil
 	}
 }

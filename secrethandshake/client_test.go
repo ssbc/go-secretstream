@@ -23,8 +23,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/cryptix/go/debug"
 	"github.com/cryptix/go/logging/logtest"
 	"github.com/cryptix/go/proc"
+	"github.com/cryptix/secretstream/secrethandshake/stateless"
 )
 
 func check(err error) {
@@ -33,7 +35,7 @@ func check(err error) {
 	}
 }
 
-func mustLoadTestKeyPair(fname string) EdKeyPair {
+func mustLoadTestKeyPair(fname string) stateless.EdKeyPair {
 	f, err := os.Open(fname)
 	check(err)
 	defer f.Close()
@@ -49,7 +51,7 @@ func mustLoadTestKeyPair(fname string) EdKeyPair {
 	secSrv, err := base64.StdEncoding.DecodeString(t.SecretKey)
 	check(err)
 
-	var kp EdKeyPair
+	var kp stateless.EdKeyPair
 	copy(kp.Public[:], pubClient)
 	copy(kp.Secret[:], secSrv)
 	return kp
@@ -62,20 +64,17 @@ func TestClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	appKey, err := base64.StdEncoding.DecodeString("IhrX11txvFiVzm+NurzHLCqUUe3xZXkPfODnp7WlMpk=")
-	if err != nil {
-		t.Fatal(err)
-	}
+	var ak = "IhrX11txvFiVzm+NurzHLCqUUe3xZXkPfODnp7WlMpk="
 
 	kpBob := mustLoadTestKeyPair("key.bob.json")
 	kpAlice := mustLoadTestKeyPair("key.alice.json")
 
-	clientState, err := NewClientState(appKey, kpAlice, kpBob.Public)
+	clientState, err := NewClientState(ak, kpAlice, kpBob.Public)
 	if err != nil {
 		t.Fatal("error making server state:", err)
 	}
 
-	if err := Client(clientState, server); err != nil {
+	if err := Client(clientState, debug.WrapRWC(server)); err != nil {
 		t.Fatal(err)
 	}
 
