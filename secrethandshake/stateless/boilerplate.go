@@ -1,10 +1,10 @@
 package stateless
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 func stripIfZero(s string) string {
@@ -16,6 +16,9 @@ func stripIfZero(s string) string {
 
 // TODO: only expose in tests?
 func (s *State) ToJsonState() *JsonState {
+	if s == nil {
+		panic("called ToJsonState on a nil state...")
+	}
 
 	rpubStr := hex.EncodeToString(s.remotePublic[:])
 	rephPubStr := hex.EncodeToString(s.ephKeyRemotePub[:])
@@ -55,6 +58,7 @@ func (s *State) ToJsonState() *JsonState {
 			Hello:     hex.EncodeToString(s.remoteHello),
 		},
 		Random:  hex.EncodeToString(s.ephRandBuf.Bytes()),
+		Seed:    hex.EncodeToString(s.seedBuf.Bytes()),
 		Secret:  secStr,
 		SecHash: shStr,
 		Secret2: sec2Str,
@@ -96,7 +100,11 @@ type JsonState struct {
 func InitializeFromJSONState(s JsonState) (*State, error) {
 	var localKeyPair Option
 	if s.Seed != "" {
-		localKeyPair = LocalKeyFromSeed(strings.NewReader(s.Seed))
+		seed, err := hex.DecodeString(s.Seed)
+		if err != nil {
+			return nil, err
+		}
+		localKeyPair = LocalKeyFromSeed(bytes.NewReader(seed))
 	} else {
 		localKeyPair = LocalKeyFromHex(s.Local.PublicKey, s.Local.SecretKey)
 	}
@@ -105,6 +113,27 @@ func InitializeFromJSONState(s JsonState) (*State, error) {
 		localKeyPair,
 		EphemeralRandFromHex(s.Random),
 		RemotePubFromHex(s.Remote.PublicKey),
+		func(state *State) error {
+			if s.Local.AppMac != "" {
+				var err error
+				state.localAppMac, err = hex.DecodeString(s.Local.AppMac)
+				if err != nil {
+					return err
+				}
+
+			}
+			return nil
+		},
+		func(state *State) error {
+			if s.Remote.AppMac != "" {
+				var err error
+				state.remoteAppMac, err = hex.DecodeString(s.Remote.AppMac)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
 		func(state *State) error {
 			if s.Local.Hello != "" {
 				var err error

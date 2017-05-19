@@ -47,8 +47,9 @@ type State struct {
 	to only include these fields in the test package
 	but first make the tests pass.
 	*/
-	ephRand    io.Reader
-	ephRandBuf bytes.Buffer // stores the bytes we read
+
+	ephRand             io.Reader
+	ephRandBuf, seedBuf bytes.Buffer // stores the bytes we read
 }
 
 type Option func(s *State) error
@@ -74,9 +75,10 @@ func LocalKey(kp EdKeyPair) Option {
 // LocalKeyFromSeed is only used for testing against known values
 func LocalKeyFromSeed(r io.Reader) Option {
 	return func(s *State) error {
-		pk, sk, err := ed25519.GenerateKey(r)
+		pk, sk, err := ed25519.GenerateKey(io.TeeReader(r, &s.seedBuf))
 		copy(s.local.Public[:], pk[:])
 		copy(s.local.Secret[:], sk[:])
+
 		return err
 	}
 }
