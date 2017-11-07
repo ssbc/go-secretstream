@@ -1,8 +1,10 @@
 {
-    "dependencies": {},
-    "devDependencies": {
-        "pull-stream": "^3.2.3",
-        "stream-to-pull-stream": "^1.6.6",
-        "chloride": "^2.0.1"
-    }
+  "dependencies": {
+    "secret-handshake": "^1.1.11"
+  },
+  "devDependencies": {
+    "pull-stream": "^3.2.3",
+    "stream-to-pull-stream": "^1.6.6",
+    "chloride": "^2.0.1"
+  }
 }

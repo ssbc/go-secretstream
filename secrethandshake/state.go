@@ -174,9 +174,11 @@ func (s *State) verifyClientAuth(data []byte) bool {
 	s.hello, openOk = box.OpenAfterPrecomputation(s.hello, data, &nonce, &s.secret2)
 
 	var sig [ed25519.SignatureSize]byte
-	copy(sig[:], s.hello[:ed25519.SignatureSize])
 	var public [ed25519.PublicKeySize]byte
-	copy(public[:], s.hello[ed25519.SignatureSize:])
+	if openOk {
+		copy(sig[:], s.hello[:ed25519.SignatureSize])
+		copy(public[:], s.hello[ed25519.SignatureSize:])
+	}
 
 	var sigMsg bytes.Buffer
 	sigMsg.Write(s.appKey)
