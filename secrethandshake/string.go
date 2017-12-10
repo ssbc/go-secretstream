@@ -1,3 +1,5 @@
+// +build dev
+
 /*
 This file is part of secretstream.
 
@@ -14,7 +16,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with secretstream.  If not, see <http://www.gnu.org/licenses/>.
 */
-// +build dev
 
 package secrethandshake
 

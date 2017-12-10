@@ -25,7 +25,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/cryptix/secretstream/secrethandshake"
+	"cryptoscope.co/go/secretstream/secrethandshake"
 )
 
 // test interface fullfilment

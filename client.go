@@ -21,9 +21,9 @@ import (
 	"net"
 	"strings"
 
+	"cryptoscope.co/go/secretstream/boxstream"
+	"cryptoscope.co/go/secretstream/secrethandshake"
 	"github.com/agl/ed25519"
-	"github.com/cryptix/secretstream/boxstream"
-	"github.com/cryptix/secretstream/secrethandshake"
 )
 
 // Client can dial secret-handshake server endpoints
