@@ -21,8 +21,8 @@ import (
 	"net"
 	"strings"
 
-	"cryptoscope.co/go/secretstream/boxstream"
-	"cryptoscope.co/go/secretstream/secrethandshake"
+	"github.com/cryptix/secretstream/boxstream"
+	"github.com/cryptix/secretstream/secrethandshake"
 )
 
 // Server can create net.Listeners
