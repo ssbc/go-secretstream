@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with secretstream.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package secretstream
+package secretstream // import "cryptoscope.co/go/secretstream"
 
 import (
 	"net"
