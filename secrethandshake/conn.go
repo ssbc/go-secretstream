@@ -23,7 +23,7 @@ import (
 	"io"
 
 	"github.com/agl/ed25519"
-	"gopkg.in/errgo.v1"
+	"github.com/pkg/errors"
 )
 
 // ChallengeLength is the length of a challenge message in bytes
@@ -56,37 +56,37 @@ func Client(state *State, conn io.ReadWriter) (err error) {
 	// send challenge
 	_, err = io.Copy(conn, bytes.NewReader(state.createChallenge()))
 	if err != nil {
-		return errgo.Notef(err, "secrethandshake: sending challenge failed.")
+		return errors.Wrapf(err, "secrethandshake: sending challenge failed.")
 	}
 
 	// recv challenge
 	chalResp := make([]byte, ChallengeLength)
 	_, err = io.ReadFull(conn, chalResp)
 	if err != nil {
-		return errgo.Notef(err, "secrethandshake: receiving challenge failed.")
+		return errors.Wrapf(err, "secrethandshake: receiving challenge failed.")
 	}
 
 	// verify challenge
 	if !state.verifyChallenge(chalResp) {
-		return errgo.New("secrethandshake: Wrong protocol version?")
+		return errors.New("secrethandshake: Wrong protocol version?")
 	}
 
 	// send authentication vector
 	_, err = io.Copy(conn, bytes.NewReader(state.createClientAuth()))
 	if err != nil {
-		return errgo.Notef(err, "secrethandshake: sending client auth failed.")
+		return errors.Wrapf(err, "secrethandshake: sending client auth failed.")
 	}
 
 	// recv authentication vector
 	boxedSig := make([]byte, ServerAuthLength)
 	_, err = io.ReadFull(conn, boxedSig)
 	if err != nil {
-		return errgo.Notef(err, "secrethandshake: receiving server auth failed")
+		return errors.Wrapf(err, "secrethandshake: receiving server auth failed")
 	}
 
 	// authenticate remote
 	if !state.verifyServerAccept(boxedSig) {
-		return errgo.New("secrethandshake: server not authenticated")
+		return errors.New("secrethandshake: server not authenticated")
 	}
 
 	state.cleanSecrets()
@@ -99,36 +99,36 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 	challenge := make([]byte, ChallengeLength)
 	_, err = io.ReadFull(conn, challenge)
 	if err != nil {
-		return errgo.Notef(err, "secrethandshake: receiving challenge failed")
+		return errors.Wrapf(err, "secrethandshake: receiving challenge failed")
 	}
 
 	// verify challenge
 	if !state.verifyChallenge(challenge) {
-		return errgo.New("secrethandshake: Wrong protocol version?")
+		return errors.New("secrethandshake: Wrong protocol version?")
 	}
 
 	// send challenge
 	_, err = io.Copy(conn, bytes.NewReader(state.createChallenge()))
 	if err != nil {
-		return errgo.Notef(err, "secrethandshake: sending server challenge failed.")
+		return errors.Wrapf(err, "secrethandshake: sending server challenge failed.")
 	}
 
 	// recv authentication vector
 	hello := make([]byte, ClientAuthLength)
 	_, err = io.ReadFull(conn, hello)
 	if err != nil {
-		return errgo.Notef(err, "secrethandshake: receiving client hello failed")
+		return errors.Wrapf(err, "secrethandshake: receiving client hello failed")
 	}
 
 	// authenticate remote
 	if !state.verifyClientAuth(hello) {
-		return errgo.New("secrethandshake: client not authenticated")
+		return errors.New("secrethandshake: client not authenticated")
 	}
 
 	// accept
 	_, err = io.Copy(conn, bytes.NewReader(state.createServerAccept()))
 	if err != nil {
-		return errgo.Notef(err, "secrethandshake: sending server auth accept failed.")
+		return errors.Wrapf(err, "secrethandshake: sending server auth accept failed.")
 	}
 
 	state.cleanSecrets()

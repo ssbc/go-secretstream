@@ -20,10 +20,10 @@ package boxstream
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"io"
 
 	"golang.org/x/crypto/nacl/secretbox"
-	"gopkg.in/errgo.v1"
 )
 
 // Unboxer decrypts everything that is read from it
@@ -61,7 +61,7 @@ func (u *Unboxer) readerloop() {
 
 		hdr, ok = secretbox.Open(hdr, hdrBox, u.nonce, u.secret)
 		if !ok {
-			u.output.CloseWithError(errgo.New("boxstream: error opening header box"))
+			u.output.CloseWithError(errors.New("boxstream: error opening header box"))
 			return
 		}
 
@@ -88,7 +88,7 @@ func (u *Unboxer) readerloop() {
 		out := make([]byte, 0, n)
 		out, ok = secretbox.Open(out, buf, increment(u.nonce), u.secret)
 		if !ok {
-			u.output.CloseWithError(errgo.New("boxstream: error opening body box"))
+			u.output.CloseWithError(errors.New("boxstream: error opening body box"))
 			return
 		}
 
