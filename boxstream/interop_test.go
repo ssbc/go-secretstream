@@ -1,3 +1,5 @@
+// +build interop_nodejs
+
 /*
 This file is part of secretstream.
 
