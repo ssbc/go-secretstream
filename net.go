@@ -20,6 +20,8 @@ package secretstream
 import (
 	"errors"
 	"net"
+
+	"cryptoscope.co/go/netwrap"
 )
 
 // ErrOnlyTCP is returned if a progrems tries to open a UDP socket through secretstream
@@ -36,7 +38,7 @@ type Listener struct {
 
 // Addr returns the
 func (l Listener) Addr() net.Addr {
-	return Addr{l.l.Addr(), l.s.keyPair.Public[:]}
+	return netwrap.WrapAddr(l.l.Addr(), Addr{l.s.keyPair.Public[:]})
 }
 
 // Close closes the underlying net.Listener

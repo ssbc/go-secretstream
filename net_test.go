@@ -27,6 +27,8 @@ import (
 	"testing"
 
 	"cryptoscope.co/go/secretstream/secrethandshake"
+
+	"cryptoscope.co/go/netwrap"
 )
 
 // test interface fullfilment
@@ -99,7 +101,8 @@ func TestNet(t *testing.T) {
 	dialer, err := c.NewDialer(serverKeys.Public)
 	tcheck(t, err)
 
-	client, err := dialer("tcp", l.Addr().String())
+	tcpAddr := netwrap.GetAddr(l.Addr(), "tcp")
+	client, err := dialer("tcp", tcpAddr.String())
 	tcheck(t, err)
 
 	buf := make([]byte, len(appKey))

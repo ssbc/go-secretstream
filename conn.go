@@ -18,26 +18,34 @@ along with secretstream.  If not, see <http://www.gnu.org/licenses/>.
 package secretstream
 
 import (
+	"encoding/base64"
 	"io"
 	"net"
 	"time"
+
+	"cryptoscope.co/go/netwrap"
 )
 
 // Addr wrapps a net.Addr and adds the public key
 type Addr struct {
-	net.Addr
 	pubKey []byte
 }
 
-// Network returns the network type of the net.Addr and appends /secret to it
-// TODO(cryptix): the appended string might interfer with callers expecting "tcp"?
+// Network returns "shs-bs", the network id of this protocol.
+// Can be used with cryptoscope.co/go/netwrap to wrap the underlying connection.
 func (a Addr) Network() string {
-	return a.Addr.Network() + "/secret"
+	return "shs-bs"
 }
 
-// PubKey returns the corrosponding public key for this connection
+// PubKey returns the corrosponding public key for this connection.
+// TODO keks: maybe just make this is public struct field?
 func (a Addr) PubKey() []byte {
 	return a.pubKey
+}
+
+func (a Addr) String() string {
+	// TODO keks: is this the address format we want to use?
+	return "@" + base64.StdEncoding.EncodeToString(a.pubKey) + ".ed25519"
 }
 
 // Conn is a boxstream wrapped net.Conn
@@ -57,12 +65,12 @@ func (c Conn) Close() error {
 
 // LocalAddr returns the local net.Addr with the local public key
 func (c Conn) LocalAddr() net.Addr {
-	return Addr{c.conn.LocalAddr(), c.local}
+	return netwrap.WrapAddr(c.conn.LocalAddr(), Addr{c.local})
 }
 
 // RemoteAddr returns the remote net.Addr with the remote public key
 func (c Conn) RemoteAddr() net.Addr {
-	return Addr{c.conn.RemoteAddr(), c.remote}
+	return netwrap.WrapAddr(c.conn.RemoteAddr(), Addr{c.remote})
 }
 
 // SetDeadline passes the call to the underlying net.Conn
