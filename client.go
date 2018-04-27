@@ -19,10 +19,11 @@ package secretstream // import "cryptoscope.co/go/secretstream"
 
 import (
 	"net"
-	"strings"
 
 	"cryptoscope.co/go/secretstream/boxstream"
 	"cryptoscope.co/go/secretstream/secrethandshake"
+
+	"cryptoscope.co/go/netwrap"
 	"github.com/agl/ed25519"
 )
 
@@ -41,17 +42,9 @@ func NewClient(kp secrethandshake.EdKeyPair, appKey []byte) (*Client, error) {
 	}, nil
 }
 
-// NewDialer returns a net.Dial-esque dialer that does a secrethandshake key exchange
-// and wraps the underlying connection into a boxstream
-func (c *Client) NewDialer(pubKey [ed25519.PublicKeySize]byte) (Dialer, error) {
-	return func(n, a string) (net.Conn, error) {
-		if !strings.HasPrefix(n, "tcp") {
-			return nil, ErrOnlyTCP
-		}
-		conn, err := net.Dial(n, a)
-		if err != nil {
-			return nil, err
-		}
+// ConnWrapper returns a connection wrapper for the client.
+func (c *Client) ConnWrapper(pubKey [ed25519.PublicKeySize]byte) netwrap.ConnWrapper {
+	return func(conn net.Conn) (net.Conn, error) {
 		state, err := secrethandshake.NewClientState(c.appKey, c.kp, pubKey)
 		if err != nil {
 			return nil, err
@@ -64,14 +57,14 @@ func (c *Client) NewDialer(pubKey [ed25519.PublicKeySize]byte) (Dialer, error) {
 		enKey, enNonce := state.GetBoxstreamEncKeys()
 		deKey, deNonce := state.GetBoxstreamDecKeys()
 
-		boxed := Conn{
-			Reader:      boxstream.NewUnboxer(conn, &deNonce, &deKey),
+		boxed := &Conn{
+			Reader: boxstream.NewUnboxer(conn, &deNonce, &deKey),
 			WriteCloser: boxstream.NewBoxer(conn, &enNonce, &enKey),
-			conn:        conn,
-			local:       c.kp.Public[:],
-			remote:      state.Remote(),
+			conn:   conn,
+			local:  c.kp.Public[:],
+			remote: state.Remote(),
 		}
 
 		return boxed, nil
-	}, nil
+	}
 }

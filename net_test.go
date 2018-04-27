@@ -31,9 +31,6 @@ import (
 	"cryptoscope.co/go/netwrap"
 )
 
-// test interface fullfilment
-var _ net.Listener = &Listener{nil, nil}
-
 var (
 	clientKeys, serverKeys *secrethandshake.EdKeyPair
 
@@ -67,52 +64,52 @@ func TestNet(t *testing.T) {
 	s, err := NewServer(*serverKeys, appKey)
 	tcheck(t, err)
 
-	l, err := s.Listen("tcp", "localhost:0")
+	l, err := netwrap.Listen(&net.TCPAddr{IP: net.IP{127, 0, 0, 1}}, s.ListenerWrapper())
 	tcheck(t, err)
 
 	testData := "Hello, World!"
 
 	go func() {
 		var (
-			c   net.Conn
-			err error
+			conn net.Conn
+			err  error
 		)
-		c, err = l.Accept()
+		conn, err = l.Accept()
 		tcheck(t, err)
 
-		_, err = c.Write(appKey)
+		_, err = conn.Write(appKey)
 		tcheck(t, err)
 
 		buf := make([]byte, len(testData))
-		_, err = io.ReadFull(c, buf)
+		_, err = io.ReadFull(conn, buf)
 		tcheck(t, err)
 
 		if string(buf) != testData {
 			t.Fatal("server read wrong bytes")
 		}
 
-		tcheck(t, c.Close())
+		tcheck(t, conn.Close())
 		tcheck(t, l.Close())
 	}()
 
 	c, err := NewClient(*clientKeys, appKey)
 	tcheck(t, err)
 
-	dialer, err := c.NewDialer(serverKeys.Public)
-	tcheck(t, err)
-
 	tcpAddr := netwrap.GetAddr(l.Addr(), "tcp")
-	client, err := dialer("tcp", tcpAddr.String())
+	connWrap := c.ConnWrapper(serverKeys.Public)
+
+	conn, err := netwrap.Dial(tcpAddr, connWrap)
 	tcheck(t, err)
 
 	buf := make([]byte, len(appKey))
-	_, err = io.ReadFull(client, buf)
+	_, err = io.ReadFull(conn, buf)
 	tcheck(t, err)
+
 	if !bytes.Equal(buf, appKey) {
-		t.Fatal("client read wrong bytes")
+		t.Fatalf("client read wrong bytes - expected %q, got %q", appKey, buf)
 	}
 
-	_, err = fmt.Fprintf(client, testData)
+	_, err = fmt.Fprintf(conn, testData)
 	tcheck(t, err)
 
 }
@@ -121,7 +118,7 @@ func TestNetClose(t *testing.T) {
 	s, err := NewServer(*serverKeys, appKey)
 	tcheck(t, err)
 
-	l, err := s.Listen("tcp", "localhost:0")
+	l, err := netwrap.Listen(&net.TCPAddr{IP:net.IP{127,0,0,1}}, s.ListenerWrapper())
 	tcheck(t, err)
 
 	// 1 MiB
@@ -148,10 +145,7 @@ func TestNetClose(t *testing.T) {
 	c, err := NewClient(*clientKeys, appKey)
 	tcheck(t, err)
 
-	dialer, err := c.NewDialer(serverKeys.Public)
-	tcheck(t, err)
-
-	client, err := dialer("tcp", l.Addr().String())
+	client, err := netwrap.Dial(netwrap.GetAddr(l.Addr(), "tcp"), c.ConnWrapper(serverKeys.Public)) 
 	tcheck(t, err)
 
 	recData := make([]byte, 1024*1024)

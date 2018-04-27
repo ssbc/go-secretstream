@@ -59,31 +59,31 @@ type Conn struct {
 }
 
 // Close closes the underlying net.Conn
-func (c Conn) Close() error {
-	return c.WriteCloser.Close()
+func (conn *Conn) Close() error {
+	return conn.WriteCloser.Close()
 }
 
 // LocalAddr returns the local net.Addr with the local public key
-func (c Conn) LocalAddr() net.Addr {
-	return netwrap.WrapAddr(c.conn.LocalAddr(), Addr{c.local})
+func (conn *Conn) LocalAddr() net.Addr {
+	return netwrap.WrapAddr(conn.conn.LocalAddr(), Addr{conn.local})
 }
 
 // RemoteAddr returns the remote net.Addr with the remote public key
-func (c Conn) RemoteAddr() net.Addr {
-	return netwrap.WrapAddr(c.conn.RemoteAddr(), Addr{c.remote})
+func (conn *Conn) RemoteAddr() net.Addr {
+	return netwrap.WrapAddr(conn.conn.RemoteAddr(), Addr{conn.remote})
 }
 
 // SetDeadline passes the call to the underlying net.Conn
-func (c Conn) SetDeadline(t time.Time) error {
-	return c.conn.SetDeadline(t)
+func (conn *Conn) SetDeadline(t time.Time) error {
+	return conn.conn.SetDeadline(t)
 }
 
 // SetReadDeadline passes the call to the underlying net.Conn
-func (c Conn) SetReadDeadline(t time.Time) error {
-	return c.conn.SetReadDeadline(t)
+func (conn *Conn) SetReadDeadline(t time.Time) error {
+	return conn.conn.SetReadDeadline(t)
 }
 
 // SetWriteDeadline passes the call to the underlying net.Conn
-func (c Conn) SetWriteDeadline(t time.Time) error {
-	return c.conn.SetWriteDeadline(t)
+func (conn *Conn) SetWriteDeadline(t time.Time) error {
+	return conn.conn.SetWriteDeadline(t)
 }

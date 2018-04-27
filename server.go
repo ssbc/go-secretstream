@@ -19,10 +19,12 @@ package secretstream
 
 import (
 	"net"
-	"strings"
 
 	"cryptoscope.co/go/secretstream/boxstream"
 	"cryptoscope.co/go/secretstream/secrethandshake"
+
+	"cryptoscope.co/go/netwrap"
+	"github.com/pkg/errors"
 )
 
 // Server can create net.Listeners
@@ -36,42 +38,41 @@ func NewServer(keyPair secrethandshake.EdKeyPair, appKey []byte) (*Server, error
 	return &Server{keyPair: keyPair, appKey: appKey}, nil
 }
 
-// Listen opens a net.Listener which accepts only secrethandshake connections
-func (s Server) Listen(n, a string) (net.Listener, error) {
-	if !strings.HasPrefix(n, "tcp") {
-		return nil, ErrOnlyTCP
-	}
-	l, err := net.Listen(n, a)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Listener{l: l, s: &s}, nil
+// ListenerWrapper returns a listener wrapper.
+func (s *Server) ListenerWrapper() netwrap.ListenerWrapper {
+	return netwrap.NewListenerWrapper(s.Addr(), s.ConnWrapper())
 }
 
-// ServerOnce wraps the passed net.Conn into a boxstream if the handshake is successful
-func ServerOnce(conn net.Conn, secretKey secrethandshake.EdKeyPair, appKey []byte) (net.Conn, error) {
-	state, err := secrethandshake.NewServerState(appKey, secretKey)
-	if err != nil {
-		return nil, err
+// ConnWrapper returns a connection wrapper.
+func (s *Server) ConnWrapper() netwrap.ConnWrapper {
+	return func(conn net.Conn) (net.Conn, error) {
+		state, err := secrethandshake.NewServerState(s.appKey, s.keyPair)
+		if err != nil {
+			return nil, errors.Wrap(err, "error building server state")
+		}
+
+		err = secrethandshake.Server(state, conn)
+		if err != nil {
+			return nil, errors.Wrap(err, "error performing handshake")
+		}
+
+		enKey, enNonce := state.GetBoxstreamEncKeys()
+		deKey, deNonce := state.GetBoxstreamDecKeys()
+
+		remote := state.Remote()
+		boxed := &Conn{
+			Reader: boxstream.NewUnboxer(conn, &deNonce, &deKey),
+			WriteCloser: boxstream.NewBoxer(conn, &enNonce, &enKey),
+			conn:   conn,
+			local:  s.keyPair.Public[:],
+			remote: remote[:],
+		}
+
+		return boxed, nil
 	}
+}
 
-	err = secrethandshake.Server(state, conn)
-	if err != nil {
-		return nil, err
-	}
-
-	enKey, enNonce := state.GetBoxstreamEncKeys()
-	deKey, deNonce := state.GetBoxstreamDecKeys()
-
-	remote := state.Remote()
-	boxed := Conn{
-		Reader:      boxstream.NewUnboxer(conn, &deNonce, &deKey),
-		WriteCloser: boxstream.NewBoxer(conn, &enNonce, &enKey),
-		conn:        conn,
-		local:       secretKey.Public[:],
-		remote:      remote[:],
-	}
-
-	return boxed, nil
+// Addr returns the shs-bs address of the server.
+func (s *Server) Addr() net.Addr {
+	return Addr{s.keyPair.Public[:]}
 }
