@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"testing"
 
@@ -111,4 +112,51 @@ func TestNet(t *testing.T) {
 	_, err = fmt.Fprintf(client, testData)
 	tcheck(t, err)
 
+}
+
+func TestNetClose(t *testing.T) {
+	s, err := NewServer(*serverKeys, appKey)
+	tcheck(t, err)
+
+	l, err := s.Listen("tcp", "localhost:0")
+	tcheck(t, err)
+
+	// 1 MiB
+	testData := make([]byte, 1024*1024)
+	for i, _ := range testData {
+		testData[i] = byte(rand.Int() % 255)
+	}
+
+	go func() {
+		var (
+			c   net.Conn
+			err error
+		)
+		c, err = l.Accept()
+		tcheck(t, err)
+
+		_, err = c.Write(testData)
+		tcheck(t, err)
+		// Immediately close conn after Write()
+
+		tcheck(t, c.Close())
+		tcheck(t, l.Close())
+	}()
+	c, err := NewClient(*clientKeys, appKey)
+	tcheck(t, err)
+
+	dialer, err := c.NewDialer(serverKeys.Public)
+	tcheck(t, err)
+
+	client, err := dialer("tcp", l.Addr().String())
+	tcheck(t, err)
+
+	recData := make([]byte, 1024*1024)
+	_, err = io.ReadFull(client, recData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(recData, testData) {
+		t.Fatal("client read wrong bytes")
+	}
 }
