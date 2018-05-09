@@ -65,11 +65,11 @@ func (c *Client) NewDialer(pubKey [ed25519.PublicKeySize]byte) (Dialer, error) {
 		deKey, deNonce := state.GetBoxstreamDecKeys()
 
 		boxed := Conn{
-			Reader: boxstream.NewUnboxer(conn, &deNonce, &deKey),
-			Writer: boxstream.NewBoxer(conn, &enNonce, &enKey),
-			conn:   conn,
-			local:  c.kp.Public[:],
-			remote: state.Remote(),
+			Reader:      boxstream.NewUnboxer(conn, &deNonce, &deKey),
+			WriteCloser: boxstream.NewBoxer(conn, &enNonce, &enKey),
+			conn:        conn,
+			local:       c.kp.Public[:],
+			remote:      state.Remote(),
 		}
 
 		return boxed, nil
