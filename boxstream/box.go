@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+	"log"
 
 	"golang.org/x/crypto/nacl/secretbox"
 )
@@ -80,6 +81,7 @@ func (b *Boxer) loop() {
 		if err != nil {
 			running = false
 			if err2 := b.input.CloseWithError(err); err2 != nil {
+				log.Print("Boxer/CloseWithErr: ", err)
 			}
 		}
 	}

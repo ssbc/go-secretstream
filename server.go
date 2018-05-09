@@ -66,11 +66,11 @@ func ServerOnce(conn net.Conn, secretKey secrethandshake.EdKeyPair, appKey []byt
 
 	remote := state.Remote()
 	boxed := Conn{
-		Reader: boxstream.NewUnboxer(conn, &deNonce, &deKey),
-		Writer: boxstream.NewBoxer(conn, &enNonce, &enKey),
-		conn:   conn,
-		local:  secretKey.Public[:],
-		remote: remote[:],
+		Reader:      boxstream.NewUnboxer(conn, &deNonce, &deKey),
+		WriteCloser: boxstream.NewBoxer(conn, &enNonce, &enKey),
+		conn:        conn,
+		local:       secretKey.Public[:],
+		remote:      remote[:],
 	}
 
 	return boxed, nil

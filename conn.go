@@ -43,7 +43,7 @@ func (a Addr) PubKey() []byte {
 // Conn is a boxstream wrapped net.Conn
 type Conn struct {
 	io.Reader
-	io.Writer
+	io.WriteCloser
 	conn net.Conn
 
 	// public keys
@@ -52,7 +52,7 @@ type Conn struct {
 
 // Close closes the underlying net.Conn
 func (c Conn) Close() error {
-	return c.conn.Close()
+	return c.WriteCloser.Close()
 }
 
 // LocalAddr returns the local net.Addr with the local public key
