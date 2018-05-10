@@ -28,7 +28,7 @@ import (
 
 // Addr wrapps a net.Addr and adds the public key
 type Addr struct {
-	pubKey []byte
+	PubKey []byte
 }
 
 // Network returns "shs-bs", the network id of this protocol.
@@ -37,15 +37,9 @@ func (a Addr) Network() string {
 	return "shs-bs"
 }
 
-// PubKey returns the corrosponding public key for this connection.
-// TODO keks: maybe just make this is public struct field?
-func (a Addr) PubKey() []byte {
-	return a.pubKey
-}
-
 func (a Addr) String() string {
 	// TODO keks: is this the address format we want to use?
-	return "@" + base64.StdEncoding.EncodeToString(a.pubKey) + ".ed25519"
+	return "@" + base64.StdEncoding.EncodeToString(a.PubKey) + ".ed25519"
 }
 
 // Conn is a boxstream wrapped net.Conn
