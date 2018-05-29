@@ -154,6 +154,8 @@ func (s *State) createClientAuth() []byte {
 	return out
 }
 
+var nullHello [ed25519.SignatureSize + ed25519.PublicKeySize]byte
+
 // verifyClientAuth returns whether a buffer contains a valid clientAuth message
 func (s *State) verifyClientAuth(data []byte) bool {
 	var cvSec, aBob [32]byte
@@ -174,9 +176,23 @@ func (s *State) verifyClientAuth(data []byte) bool {
 	s.hello, openOk = box.OpenAfterPrecomputation(s.hello, data, &nonce, &s.secret2)
 
 	var sig [ed25519.SignatureSize]byte
-	copy(sig[:], s.hello[:ed25519.SignatureSize])
 	var public [ed25519.PublicKeySize]byte
-	copy(public[:], s.hello[ed25519.SignatureSize:])
+	/* TODO: is this const time!?!
+
+	   this is definetly not:
+	   if !openOK {
+	   	s.hello = nullHello
+	   }
+	   copy(sig, ...)
+	   copy(pub, ...)
+	*/
+	if openOk {
+		copy(sig[:], s.hello[:ed25519.SignatureSize])
+		copy(public[:], s.hello[ed25519.SignatureSize:])
+	} else {
+		copy(sig[:], nullHello[:ed25519.SignatureSize])
+		copy(public[:], nullHello[ed25519.SignatureSize:])
+	}
 
 	var sigMsg bytes.Buffer
 	sigMsg.Write(s.appKey)
