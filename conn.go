@@ -23,7 +23,7 @@ import (
 	"net"
 	"time"
 
-	"cryptoscope.co/go/netwrap"
+	"go.cryptoscope.co/netwrap"
 )
 
 // Addr wrapps a net.Addr and adds the public key
@@ -32,7 +32,7 @@ type Addr struct {
 }
 
 // Network returns "shs-bs", the network id of this protocol.
-// Can be used with cryptoscope.co/go/netwrap to wrap the underlying connection.
+// Can be used with go.cryptoscope.co/netwrap to wrap the underlying connection.
 func (a Addr) Network() string {
 	return "shs-bs"
 }

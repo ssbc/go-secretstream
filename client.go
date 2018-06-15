@@ -15,15 +15,15 @@ You should have received a copy of the GNU General Public License
 along with secretstream.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package secretstream // import "cryptoscope.co/go/secretstream"
+package secretstream // import "go.cryptoscope.co/secretstream"
 
 import (
 	"net"
 
-	"cryptoscope.co/go/secretstream/boxstream"
-	"cryptoscope.co/go/secretstream/secrethandshake"
+	"go.cryptoscope.co/secretstream/boxstream"
+	"go.cryptoscope.co/secretstream/secrethandshake"
 
-	"cryptoscope.co/go/netwrap"
+	"go.cryptoscope.co/netwrap"
 	"github.com/agl/ed25519"
 )
 

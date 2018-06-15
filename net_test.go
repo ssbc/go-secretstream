@@ -26,9 +26,9 @@ import (
 	"net"
 	"testing"
 
-	"cryptoscope.co/go/secretstream/secrethandshake"
+	"go.cryptoscope.co/secretstream/secrethandshake"
 
-	"cryptoscope.co/go/netwrap"
+	"go.cryptoscope.co/netwrap"
 )
 
 var (

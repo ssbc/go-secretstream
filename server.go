@@ -20,10 +20,10 @@ package secretstream
 import (
 	"net"
 
-	"cryptoscope.co/go/secretstream/boxstream"
-	"cryptoscope.co/go/secretstream/secrethandshake"
+	"go.cryptoscope.co/secretstream/boxstream"
+	"go.cryptoscope.co/secretstream/secrethandshake"
 
-	"cryptoscope.co/go/netwrap"
+	"go.cryptoscope.co/netwrap"
 	"github.com/pkg/errors"
 )
 

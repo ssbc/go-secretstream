@@ -10,7 +10,7 @@ matrix:
   allow_failures:
     - go: master
 
-go_import_path: cryptoscope.co/go/secretstream
+go_import_path: go.cryptoscope.co/secretstream
 
 install:
-  - go get -t -v cryptoscope.co/go/secretstream/...
+  - go get -t -v go.cryptoscope.co/secretstream/...
