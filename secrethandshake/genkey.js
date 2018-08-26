@@ -16,7 +16,7 @@ along with secretstream.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var sodium = require('chloride')
-var k = sodium.crypto_sign_keypair()   
+var k = sodium.crypto_sign_keypair()
 
 console.log(JSON.stringify({
     "publicKey":k.publicKey.toString("base64"),

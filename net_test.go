@@ -145,7 +145,7 @@ func TestNetClose(t *testing.T) {
 	c, err := NewClient(*clientKeys, appKey)
 	tcheck(t, err)
 
-	client, err := netwrap.Dial(netwrap.GetAddr(l.Addr(), "tcp"), c.ConnWrapper(serverKeys.Public)) 
+	client, err := netwrap.Dial(netwrap.GetAddr(l.Addr(), "tcp"), c.ConnWrapper(serverKeys.Public))
 	tcheck(t, err)
 
 	recData := make([]byte, 1024*1024)
