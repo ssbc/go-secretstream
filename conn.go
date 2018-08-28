@@ -26,15 +26,17 @@ import (
 	"go.cryptoscope.co/netwrap"
 )
 
+const NetworkString = "shs-bs"
+
 // Addr wrapps a net.Addr and adds the public key
 type Addr struct {
 	PubKey []byte
 }
 
-// Network returns "shs-bs", the network id of this protocol.
+// Network returns NetworkString, the network id of this protocol.
 // Can be used with go.cryptoscope.co/netwrap to wrap the underlying connection.
 func (a Addr) Network() string {
-	return "shs-bs"
+	return NetworkString
 }
 
 func (a Addr) String() string {
