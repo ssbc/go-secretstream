@@ -64,8 +64,8 @@ func (conn *Conn) Close() error {
 	werr = errors.Wrap(werr, "boxstream: error closing boxer")
 	rerr = errors.Wrap(rerr, "boxstream: error closing unboxer")
 
-	// just to be double sure the FD is closed if the piping (un)boxes mess this up
-	defer conn.conn.Close()
+	// TODO: just to be double sure the FD is closed if the piping (un)boxes mess this up?
+	// defer conn.conn.Close()
 
 	if werr != nil && rerr != nil {
 		return errors.Wrap(multierror.Append(werr, rerr), "error closing both boxstream boxer and unboxer")

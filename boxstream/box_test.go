@@ -22,6 +22,16 @@ import (
 	"testing"
 )
 
+func mkCheckOnce(errc chan<- error) func(error) {
+	return func(err error) {
+		if err != nil {
+			errc <- err
+		} else {
+			close(errc)
+		}
+	}
+}
+
 func TestBox(t *testing.T) {
 	pr, pw := io.Pipe()
 
@@ -41,11 +51,11 @@ func TestBox(t *testing.T) {
 	bw := NewBoxer(pw, &boxnonce, &secret)
 	br := NewUnboxer(pr, &unboxnonce, &secret)
 
+	errc := make(chan error)
+	check := mkCheckOnce(errc)
 	go func() {
 		_, err := bw.Write([]byte{0, 1, 2, 3, 4, 5})
-		if err != nil {
-			t.Fatal(err)
-		}
+		check(err)
 	}()
 
 	buf := make([]byte, 10)
@@ -54,6 +64,10 @@ func TestBox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if e, ok := <-errc; ok {
+		t.Fatal(e)
+	}
+
 	rx := buf[:n]
 
 	if len(rx) != 6 {
