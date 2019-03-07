@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// LoadSSBKeyPair parses an ssb secret file
 func LoadSSBKeyPair(fname string) (*EdKeyPair, error) {
 	f, err := os.Open(fname)
 	if err != nil {
