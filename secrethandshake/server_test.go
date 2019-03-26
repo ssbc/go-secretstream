@@ -13,13 +13,15 @@ import (
 )
 
 func TestServer(t *testing.T) {
+	var err error
 
-	pubServ, err := base64.StdEncoding.DecodeString("dz9tpZBrNTCCKiA+mIn/x1M6IEO9k05DbkgpqsGbTpE=")
+	var kp EdKeyPair
+	kp.Public, err = base64.StdEncoding.DecodeString("dz9tpZBrNTCCKiA+mIn/x1M6IEO9k05DbkgpqsGbTpE=")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	secSrv, err := base64.StdEncoding.DecodeString("kB4WbT+KvUYwpCxc0FC5+FYKFbUFMoIR+f7VhDVWvU13P22lkGs1MIIqID6Yif/HUzogQ72TTkNuSCmqwZtOkQ==")
+	kp.Secret, err = base64.StdEncoding.DecodeString("kB4WbT+KvUYwpCxc0FC5+FYKFbUFMoIR+f7VhDVWvU13P22lkGs1MIIqID6Yif/HUzogQ72TTkNuSCmqwZtOkQ==")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,10 +30,6 @@ func TestServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	var kp EdKeyPair
-	copy(kp.Public[:], pubServ)
-	copy(kp.Secret[:], secSrv)
 
 	serverState, err := NewServerState(appKey, kp)
 	if err != nil {

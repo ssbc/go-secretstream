@@ -23,10 +23,8 @@ func main() {
 	appKey, err := hex.DecodeString(os.Args[1])
 	check(err)
 
-	rpSlice, err := hex.DecodeString(os.Args[2])
+	remotePublic, err := hex.DecodeString(os.Args[2])
 	check(err)
-	var remotePublic [32]byte
-	copy(remotePublic[:], rpSlice)
 
 	keyPair, err := secrethandshake.GenEdKeyPair(nil)
 	check(err)

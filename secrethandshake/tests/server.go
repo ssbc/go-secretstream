@@ -26,14 +26,11 @@ func main() {
 	check(err)
 
 	var keyPair secrethandshake.EdKeyPair
-	secSlice, err := hex.DecodeString(os.Args[2])
+	keyPair.Secret, err = hex.DecodeString(os.Args[2])
 	check(err)
 
-	pubSlice, err := hex.DecodeString(os.Args[3])
+	keyPair.Public, err = hex.DecodeString(os.Args[3])
 	check(err)
-
-	copy(keyPair.Secret[:], secSlice)
-	copy(keyPair.Public[:], pubSlice)
 
 	s, err := secrethandshake.NewServerState(appKey, keyPair)
 	check(err)

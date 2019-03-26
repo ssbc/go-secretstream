@@ -22,14 +22,11 @@ func mustLoadTestKeyPair(fname string) EdKeyPair {
 	}
 	check(json.NewDecoder(f).Decode(&t))
 
-	pubClient, err := base64.StdEncoding.DecodeString(t.PublicKey)
-	check(err)
-
-	secSrv, err := base64.StdEncoding.DecodeString(t.SecretKey)
-	check(err)
-
 	var kp EdKeyPair
-	copy(kp.Public[:], pubClient)
-	copy(kp.Secret[:], secSrv)
+	kp.Public, err = base64.StdEncoding.DecodeString(t.PublicKey)
+	check(err)
+	kp.Secret, err = base64.StdEncoding.DecodeString(t.SecretKey)
+	check(err)
+
 	return kp
 }
