@@ -118,7 +118,7 @@ func TestNetClose(t *testing.T) {
 	s, err := NewServer(*serverKeys, appKey)
 	tcheck(t, err)
 
-	l, err := netwrap.Listen(&net.TCPAddr{IP:net.IP{127,0,0,1}}, s.ListenerWrapper())
+	l, err := netwrap.Listen(&net.TCPAddr{IP: net.IP{127, 0, 0, 1}}, s.ListenerWrapper())
 	tcheck(t, err)
 
 	// 1 MiB
