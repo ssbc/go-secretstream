@@ -14,6 +14,7 @@ import (
 
 	"github.com/agl/ed25519"
 	"github.com/agl/ed25519/extra25519"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/nacl/box"
 )
@@ -39,6 +40,22 @@ type State struct {
 type EdKeyPair struct {
 	Public [ed25519.PublicKeySize]byte
 	Secret [ed25519.PrivateKeySize]byte
+}
+
+func NewKeyPair(public, secret []byte) (*EdKeyPair, error) {
+	var kp EdKeyPair
+	if n := copy(kp.Secret[:], secret); n != ed25519.PrivateKeySize {
+		return nil, errors.Errorf("NewKeyPair: invalid private key size:%d", n)
+	}
+	if n := copy(kp.Public[:], public); n != ed25519.PublicKeySize {
+		return nil, errors.Errorf("NewKeyPair: invalid public key size:%d", n)
+	}
+
+	if lo25519.IsEdLowOrder(public) {
+		return nil, errors.Errorf("NewKeyPair: invalid public key")
+	}
+
+	return &kp, nil
 }
 
 // CurveKeyPair is a keypair for use with github.com/agl/ed25519

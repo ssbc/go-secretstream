@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 
+	"go.cryptoscope.co/secretstream/internal/lo25519"
+
 	"github.com/agl/ed25519"
 	"github.com/pkg/errors"
 )
@@ -48,7 +50,10 @@ func GenEdKeyPair(r io.Reader) (*EdKeyPair, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &EdKeyPair{*pubSrv, *secSrv}, nil
+	if lo25519.IsEdLowOrder(pubSrv[:]) {
+		pubSrv, secSrv, err = ed25519.GenerateKey(r)
+	}
+	return &EdKeyPair{*pubSrv, *secSrv}, err
 }
 
 // Client shakes hands using the cryptographic identity specified in s using conn in the client role
