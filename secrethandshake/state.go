@@ -11,6 +11,7 @@ package secrethandshake
 
 import (
 	"bytes"
+	"fmt"
 	"unsafe" // ☢ ☣
 
 	"crypto/hmac"
