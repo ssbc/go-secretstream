@@ -197,6 +197,9 @@ func (s *State) verifyClientAuth(data []byte) bool {
 	)
 
 	s.hello, openOk = box.OpenAfterPrecomputation(s.hello, data, &nonce, &s.secret2)
+	if !openOk && s.hello == nil {
+		fmt.Println("warning: nil hello")
+	}
 	// subtle API requires an int containing 0 or 1, we only have bool.
 	// we can't branch because openOk is secret.
 	okInt := int(*((*byte)(unsafe.Pointer(&openOk))))
