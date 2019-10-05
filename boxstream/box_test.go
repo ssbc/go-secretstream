@@ -3,6 +3,7 @@
 package boxstream
 
 import (
+	"io"
 	"net"
 	"testing"
 )
@@ -36,11 +37,16 @@ func TestBox(t *testing.T) {
 	bw := NewBoxer(pw, &boxnonce, &secret)
 	br := NewUnboxer(pr, &unboxnonce, &secret)
 
-	errc := make(chan error)
-	check := mkCheckOnce(errc)
+	wErrc := make(chan error)
+	checkW := mkCheckOnce(wErrc)
+	cErrc := make(chan error)
+	checkC := mkCheckOnce(cErrc)
 	go func() {
 		_, err := bw.Write([]byte{0, 1, 2, 3, 4, 5})
-		check(err)
+		checkW(err)
+
+		err = bw.Close()
+		checkC(err)
 	}()
 
 	buf := make([]byte, 10)
@@ -49,7 +55,7 @@ func TestBox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if e, ok := <-errc; ok {
+	if e, ok := <-wErrc; ok {
 		t.Fatal(e)
 	}
 
@@ -65,14 +71,17 @@ func TestBox(t *testing.T) {
 		}
 	}
 
-	err = br.Close()
-	if err != nil {
+	var eof = make([]byte, 10)
+	n, err = br.Read(eof)
+	if err != io.EOF {
 		t.Fatal(err)
 	}
+	if n != 0 {
+		t.Errorf("more data?")
+	}
 
-	err = bw.Close()
-	if err != nil {
-		t.Fatal(err)
+	if e, ok := <-cErrc; ok {
+		t.Fatal(e)
 	}
 
 }
