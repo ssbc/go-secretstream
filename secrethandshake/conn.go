@@ -18,7 +18,6 @@ along with secretstream.  If not, see <http://www.gnu.org/licenses/>.
 package secrethandshake
 
 import (
-	"bytes"
 	"crypto/rand"
 	"io"
 
@@ -54,7 +53,7 @@ func GenEdKeyPair(r io.Reader) (*EdKeyPair, error) {
 // Client shakes hands using the cryptographic identity specified in s using conn in the client role
 func Client(state *State, conn io.ReadWriter) (err error) {
 	// send challenge
-	_, err = io.Copy(conn, bytes.NewReader(state.createChallenge()))
+	_, err = conn.Write(state.createChallenge())
 	if err != nil {
 		return errors.Wrapf(err, "secrethandshake: sending challenge failed.")
 	}
@@ -72,7 +71,7 @@ func Client(state *State, conn io.ReadWriter) (err error) {
 	}
 
 	// send authentication vector
-	_, err = io.Copy(conn, bytes.NewReader(state.createClientAuth()))
+	_, err = conn.Write(state.createClientAuth())
 	if err != nil {
 		return errors.Wrapf(err, "secrethandshake: sending client auth failed.")
 	}
@@ -108,7 +107,7 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 	}
 
 	// send challenge
-	_, err = io.Copy(conn, bytes.NewReader(state.createChallenge()))
+	_, err = conn.Write(state.createChallenge())
 	if err != nil {
 		return errors.Wrapf(err, "secrethandshake: sending server challenge failed.")
 	}
@@ -126,7 +125,7 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 	}
 
 	// accept
-	_, err = io.Copy(conn, bytes.NewReader(state.createServerAccept()))
+	_, err = conn.Write(state.createServerAccept())
 	if err != nil {
 		return errors.Wrapf(err, "secrethandshake: sending server auth accept failed.")
 	}
