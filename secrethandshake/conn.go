@@ -27,10 +27,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ErrProtocol int
+type ErrProtocol struct {
+	code int
+}
 
 func (eh ErrProtocol) Error() string {
-	switch eh {
+	switch eh.code {
 	case 0:
 		return "secrethandshake: Wrong protocol version?"
 	case 1:
@@ -82,7 +84,7 @@ func Client(state *State, conn io.ReadWriter) (err error) {
 
 	// verify challenge
 	if !state.verifyChallenge(chalResp) {
-		return ErrProtocol(0)
+		return ErrProtocol{0}
 	}
 
 	// send authentication vector
@@ -100,7 +102,7 @@ func Client(state *State, conn io.ReadWriter) (err error) {
 
 	// authenticate remote
 	if !state.verifyServerAccept(boxedSig) {
-		return ErrProtocol(1)
+		return ErrProtocol{1}
 	}
 
 	state.cleanSecrets()
@@ -118,7 +120,7 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 
 	// verify challenge
 	if !state.verifyChallenge(challenge) {
-		return ErrProtocol(0)
+		return ErrProtocol{0}
 	}
 
 	// send challenge
@@ -136,7 +138,7 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 
 	// authenticate remote
 	if !state.verifyClientAuth(hello) {
-		return ErrProtocol(1)
+		return ErrProtocol{1}
 	}
 
 	// accept
