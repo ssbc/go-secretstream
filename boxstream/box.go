@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
 
+// Package boxstream implements npm:pull-box-stream in Go (without the pull)
+//
+// https://github.com/dominictarr/pull-box-stream
 package boxstream
 
 import (

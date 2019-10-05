@@ -1,5 +1,12 @@
 // SPDX-License-Identifier: MIT
 
+/* Package secrethandshake is a Go implementation of Dominic Tarr's secret-handshake: https://github.com/auditdrivencrypto/secret-handshake
+
+Two instances of go-shs can secretly shake hands over a connection.
+
+The implementation is compatible with the JS implementation.
+Run `npm ci && go test -tags interop_nodejs`.
+*/
 package secrethandshake
 
 import (
