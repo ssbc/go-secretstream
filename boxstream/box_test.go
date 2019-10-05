@@ -18,7 +18,7 @@ along with secretstream.  If not, see <http://www.gnu.org/licenses/>.
 package boxstream
 
 import (
-	"io"
+	"net"
 	"testing"
 )
 
@@ -33,7 +33,7 @@ func mkCheckOnce(errc chan<- error) func(error) {
 }
 
 func TestBox(t *testing.T) {
-	pr, pw := io.Pipe()
+	pr, pw := net.Pipe()
 
 	var secret [32]byte
 	var boxnonce [24]byte
@@ -79,4 +79,15 @@ func TestBox(t *testing.T) {
 			t.Errorf("expected %v, got %v", i, x)
 		}
 	}
+
+	err = br.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = bw.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 }

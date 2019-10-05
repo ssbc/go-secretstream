@@ -20,15 +20,15 @@ package secretstream
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"io"
 	"math/rand"
 	"net"
+	"strings"
 	"testing"
 
-	"go.cryptoscope.co/secretstream/secrethandshake"
-
+	"github.com/stretchr/testify/require"
 	"go.cryptoscope.co/netwrap"
+	"go.cryptoscope.co/secretstream/secrethandshake"
 )
 
 var (
@@ -54,20 +54,16 @@ func check(err error) {
 	}
 }
 
-func tcheck(t *testing.T, err error) {
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestNet(t *testing.T) {
+	r := require.New(t)
+
 	s, err := NewServer(*serverKeys, appKey)
-	tcheck(t, err)
+	r.NoError(err)
 
 	l, err := netwrap.Listen(&net.TCPAddr{IP: net.IP{127, 0, 0, 1}}, s.ListenerWrapper())
-	tcheck(t, err)
+	r.NoError(err)
 
-	testData := "Hello, World!"
+	testData := strings.Repeat("Hello, World!", 50)
 
 	go func() {
 		var (
@@ -75,51 +71,101 @@ func TestNet(t *testing.T) {
 			err  error
 		)
 		conn, err = l.Accept()
-		tcheck(t, err)
+		r.NoError(err)
 
 		_, err = conn.Write(appKey)
-		tcheck(t, err)
+		r.NoError(err)
 
 		buf := make([]byte, len(testData))
 		_, err = io.ReadFull(conn, buf)
-		tcheck(t, err)
+		r.NoError(err)
 
-		if string(buf) != testData {
-			t.Fatal("server read wrong bytes")
-		}
+		r.Equal(string(buf), testData, "server read wrong bytes")
 
-		tcheck(t, conn.Close())
-		tcheck(t, l.Close())
+		r.NoError(conn.Close())
+		r.NoError(l.Close())
 	}()
 
 	c, err := NewClient(*clientKeys, appKey)
-	tcheck(t, err)
+	r.NoError(err)
 
 	tcpAddr := netwrap.GetAddr(l.Addr(), "tcp")
 	connWrap := c.ConnWrapper(serverKeys.Public)
 
 	conn, err := netwrap.Dial(tcpAddr, connWrap)
-	tcheck(t, err)
+	r.NoError(err)
 
 	buf := make([]byte, len(appKey))
 	_, err = io.ReadFull(conn, buf)
-	tcheck(t, err)
+	r.NoError(err)
 
 	if !bytes.Equal(buf, appKey) {
 		t.Fatalf("client read wrong bytes - expected %q, got %q", appKey, buf)
 	}
 
-	_, err = fmt.Fprintf(conn, testData)
-	tcheck(t, err)
+	_, err = conn.Write([]byte(testData))
+	r.NoError(err)
 
+	r.NoError(conn.Close(), "failed to close conn")
 }
 
 func TestNetClose(t *testing.T) {
+	r := require.New(t)
+
 	s, err := NewServer(*serverKeys, appKey)
-	tcheck(t, err)
+	r.NoError(err)
 
 	l, err := netwrap.Listen(&net.TCPAddr{IP: net.IP{127, 0, 0, 1}}, s.ListenerWrapper())
-	tcheck(t, err)
+	r.NoError(err)
+
+	// 1 MiB
+	testData := make([]byte, 1024*1024)
+	for i, _ := range testData {
+		testData[i] = byte(rand.Int() % 255)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		var (
+			c   net.Conn
+			err error
+		)
+		c, err = l.Accept()
+		r.NoError(err)
+
+		_, err = c.Write(testData)
+		r.NoError(err)
+		// Immediately close conn after Write()
+
+		<-done
+		r.NoError(c.Close())
+		r.NoError(l.Close())
+	}()
+	c, err := NewClient(*clientKeys, appKey)
+	r.NoError(err)
+
+	client, err := netwrap.Dial(netwrap.GetAddr(l.Addr(), "tcp"), c.ConnWrapper(serverKeys.Public))
+	r.NoError(err)
+
+	recData := make([]byte, 1024*1024)
+	_, err = io.ReadFull(client, recData)
+	r.NoError(err)
+	r.Equal(recData, testData, "client read wrong bytes")
+	close(done)
+
+	r.NoError(client.Close(), "failed to close client")
+}
+
+// TODO add tests for incomplete boxes and see that the goroutine piping cleans up nicely
+
+func TestNetCloseEarly(t *testing.T) {
+	r := require.New(t)
+
+	s, err := NewServer(*serverKeys, appKey)
+	r.NoError(err)
+
+	l, err := netwrap.Listen(&net.TCPAddr{IP: net.IP{127, 0, 0, 1}}, s.ListenerWrapper())
+	r.NoError(err)
 
 	// 1 MiB
 	testData := make([]byte, 1024*1024)
@@ -133,27 +179,27 @@ func TestNetClose(t *testing.T) {
 			err error
 		)
 		c, err = l.Accept()
-		tcheck(t, err)
+		r.NoError(err)
 
-		_, err = c.Write(testData)
-		tcheck(t, err)
-		// Immediately close conn after Write()
+		// short write
+		_, err = c.Write(testData[:10])
+		r.NoError(err)
 
-		tcheck(t, c.Close())
-		tcheck(t, l.Close())
+		r.NoError(c.Close())
+		r.NoError(l.Close())
 	}()
 	c, err := NewClient(*clientKeys, appKey)
-	tcheck(t, err)
+	r.NoError(err)
 
 	client, err := netwrap.Dial(netwrap.GetAddr(l.Addr(), "tcp"), c.ConnWrapper(serverKeys.Public))
-	tcheck(t, err)
+	r.NoError(err)
 
 	recData := make([]byte, 1024*1024)
 	_, err = io.ReadFull(client, recData)
+	r.Error(err)
+
+	err = client.Close()
 	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(recData, testData) {
-		t.Fatal("client read wrong bytes")
+		t.Error("failed to close client", err)
 	}
 }
