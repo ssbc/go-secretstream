@@ -46,7 +46,7 @@ func (s *Server) ConnWrapper() netwrap.ConnWrapper {
 
 		remote := state.Remote()
 		boxed := &Conn{
-			ReadCloser:  boxstream.NewUnboxer(conn, &deNonce, &deKey),
+			Reader:      boxstream.NewUnboxer(conn, &deNonce, &deKey),
 			WriteCloser: boxstream.NewBoxer(conn, &enNonce, &enKey),
 			conn:        conn,
 			local:       s.keyPair.Public[:],

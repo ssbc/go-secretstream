@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
-	"log"
 
 	"golang.org/x/crypto/nacl/secretbox"
 )
@@ -19,27 +18,67 @@ const (
 	MaxSegmentSize = 4 * 1024
 )
 
-var final [18]byte
+var goodbye [18]byte
 
 // Boxer encrypts everything that is written to it
 type Boxer struct {
-	input  *io.PipeReader
-	output io.WriteCloser
+	w      io.Writer
 	secret *[32]byte
 	nonce  *[24]byte
 }
 
+// writeMessage writes a boxstream packet to the underlying writer.
+func (b *Boxer) writeMessage(msg []byte) error {
+	if len(msg) > MaxSegmentSize {
+		panic("message exceeds maximum segment size")
+	}
+	headerNonce := *b.nonce
+	increment(b.nonce)
+	bodyNonce := *b.nonce
+	increment(b.nonce)
+
+	// construct body box
+	bodyBox := secretbox.Seal(nil, msg, &bodyNonce, b.secret)
+	bodyMAC, body := bodyBox[:secretbox.Overhead], bodyBox[secretbox.Overhead:]
+
+	// construct header box
+	header := make([]byte, 2+secretbox.Overhead)
+	binary.BigEndian.PutUint16(header[:2], uint16(len(msg)))
+	copy(header[2:], bodyMAC)
+	headerBox := secretbox.Seal(nil, header, &headerNonce, b.secret)
+
+	// write header + body
+	if _, err := b.w.Write(headerBox); err != nil {
+		return err
+	}
+	_, err := b.w.Write(body)
+	return err
+}
+
+// Write implements io.Writer.
+func (b *Boxer) Write(p []byte) (int, error) {
+	buf := bytes.NewBuffer(p)
+	for buf.Len() > 0 {
+		if err := b.writeMessage(buf.Next(MaxSegmentSize)); err != nil {
+			return 0, err
+		}
+	}
+	return len(p), nil
+}
+
+// Close implements io.Closer. It writes the 'goodbye' protocol message to the underlying writer.
+func (b *Boxer) Close() error {
+	_, err := b.w.Write(secretbox.Seal(nil, goodbye[:], b.nonce, b.secret))
+	return err
+}
+
 // NewBoxer returns a Boxer wich encrypts everything that is written to the passed writer
-func NewBoxer(wc io.WriteCloser, nonce *[24]byte, secret *[32]byte) io.WriteCloser {
-	pr, pw := io.Pipe()
-	b := &Boxer{
-		input:  pr,
-		output: wc,
+func NewBoxer(w io.Writer, nonce *[24]byte, secret *[32]byte) io.WriteCloser {
+	return &Boxer{
+		w:      w,
 		secret: secret,
 		nonce:  nonce,
 	}
-	go b.loop()
-	return pw
 }
 
 func increment(b *[24]byte) *[24]byte {
@@ -55,67 +94,4 @@ func increment(b *[24]byte) *[24]byte {
 	b[i] = b[i] + 1
 
 	return b
-}
-
-func (b *Boxer) loop() {
-	var running = true
-	var eof = false
-	var nonce1, nonce2 [24]byte
-
-	check := func(err error) {
-		if err != nil {
-			running = false
-			if err2 := b.input.CloseWithError(err); err2 != nil {
-				log.Print("Boxer: pipe CloseWithErr failed: ", err)
-			}
-		}
-	}
-
-	defer func() {
-		if err := b.output.Close(); err != nil {
-			log.Print("Boxer: output writer close failed: ", err)
-		}
-	}()
-
-	// prepare nonces
-	copy(nonce1[:], b.nonce[:])
-	copy(nonce2[:], b.nonce[:])
-
-	for running {
-
-		msg := make([]byte, MaxSegmentSize)
-		n, err := io.ReadAtLeast(b.input, msg, 1)
-		if err == io.EOF {
-			eof = true
-			running = false
-		} else {
-			check(err)
-		}
-		msg = msg[:n]
-
-		// buffer for box of current
-		boxed := secretbox.Seal(nil, msg, increment(&nonce2), b.secret)
-		// define and populate header
-		var hdrPlain = bytes.NewBuffer(nil)
-		err = binary.Write(hdrPlain, binary.BigEndian, uint16(len(msg)))
-		check(err)
-
-		// slice mac from box
-		hdrPlain.Write(boxed[:16]) // ???
-
-		if eof {
-			hdrPlain.Reset()
-			hdrPlain.Write(final[:])
-		}
-		hdrBox := secretbox.Seal(nil, hdrPlain.Bytes(), &nonce1, b.secret)
-
-		increment(increment(&nonce1))
-		increment(&nonce2)
-
-		_, err = io.Copy(b.output, bytes.NewReader(hdrBox))
-		check(err)
-
-		_, err = io.Copy(b.output, bytes.NewReader(boxed[secretbox.Overhead:]))
-		check(err)
-	}
 }

@@ -33,7 +33,7 @@ func (a Addr) String() string {
 
 // Conn is a boxstream wrapped net.Conn
 type Conn struct {
-	io.ReadCloser
+	io.Reader
 	io.WriteCloser
 	conn net.Conn
 
@@ -44,24 +44,21 @@ type Conn struct {
 // Close closes the underlying net.Conn
 func (conn *Conn) Close() error {
 	werr := conn.WriteCloser.Close()
-	rerr := conn.ReadCloser.Close()
+	cerr := conn.conn.Close()
 
 	werr = errors.Wrap(werr, "boxstream: error closing boxer")
-	rerr = errors.Wrap(rerr, "boxstream: error closing unboxer")
+	cerr = errors.Wrap(cerr, "boxstream: error closing conn")
 
-	// TODO: just to be double sure the FD is closed if the piping (un)boxes mess this up?
-	// defer conn.conn.Close()
-
-	if werr != nil && rerr != nil {
-		return errors.Wrap(multierror.Append(werr, rerr), "error closing both boxstream boxer and unboxer")
+	if werr != nil && cerr != nil {
+		return errors.Wrap(multierror.Append(werr, cerr), "error closing both boxer and conn")
 	}
 
 	if werr != nil {
 		return werr
 	}
 
-	if rerr != nil {
-		return rerr
+	if cerr != nil {
+		return cerr
 	}
 
 	return nil
