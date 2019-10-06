@@ -42,25 +42,20 @@ func TestBox(t *testing.T) {
 	cErrc := make(chan error)
 	checkC := mkCheckOnce(cErrc)
 	go func() {
-		_, err := bw.Write([]byte{0, 1, 2, 3, 4, 5})
+		err := bw.WriteMessage([]byte{0, 1, 2, 3, 4, 5})
 		checkW(err)
 
-		err = bw.Close()
+		err = bw.WriteGoodbye()
 		checkC(err)
 	}()
 
-	buf := make([]byte, 10)
-
-	n, err := br.Read(buf[:6])
+	rx, err := br.ReadMessage()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if e, ok := <-wErrc; ok {
 		t.Fatal(e)
 	}
-
-	rx := buf[:n]
-
 	if len(rx) != 6 {
 		t.Error("rx len wrong")
 	}
@@ -71,12 +66,10 @@ func TestBox(t *testing.T) {
 		}
 	}
 
-	var eof = make([]byte, 10)
-	n, err = br.Read(eof)
+	rx, err = br.ReadMessage()
 	if err != io.EOF {
 		t.Fatal(err)
-	}
-	if n != 0 {
+	} else if len(rx) != 0 {
 		t.Errorf("more data?")
 	}
 

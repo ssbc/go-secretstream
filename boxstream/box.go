@@ -6,7 +6,6 @@
 package boxstream
 
 import (
-	"bytes"
 	"encoding/binary"
 	"io"
 
@@ -30,8 +29,9 @@ type Boxer struct {
 	nonce  *[24]byte
 }
 
-// writeMessage writes a boxstream packet to the underlying writer.
-func (b *Boxer) writeMessage(msg []byte) error {
+// WriteMessage writes a boxstream packet to the underlying writer. len(msg)
+// must not exceed MaxSegmentSize.
+func (b *Boxer) WriteMessage(msg []byte) error {
 	if len(msg) > MaxSegmentSize {
 		panic("message exceeds maximum segment size")
 	}
@@ -58,25 +58,14 @@ func (b *Boxer) writeMessage(msg []byte) error {
 	return err
 }
 
-// Write implements io.Writer.
-func (b *Boxer) Write(p []byte) (int, error) {
-	buf := bytes.NewBuffer(p)
-	for buf.Len() > 0 {
-		if err := b.writeMessage(buf.Next(MaxSegmentSize)); err != nil {
-			return 0, err
-		}
-	}
-	return len(p), nil
-}
-
-// Close implements io.Closer. It writes the 'goodbye' protocol message to the underlying writer.
-func (b *Boxer) Close() error {
+// WriteGoodbye writes the 'goodbye' protocol message to the underlying writer.
+func (b *Boxer) WriteGoodbye() error {
 	_, err := b.w.Write(secretbox.Seal(nil, goodbye[:], b.nonce, b.secret))
 	return err
 }
 
-// NewBoxer returns a Boxer wich encrypts everything that is written to the passed writer
-func NewBoxer(w io.Writer, nonce *[24]byte, secret *[32]byte) io.WriteCloser {
+// NewBoxer returns a Boxer that writes encrypted messages to w.
+func NewBoxer(w io.Writer, nonce *[24]byte, secret *[32]byte) *Boxer {
 	return &Boxer{
 		w:      w,
 		secret: secret,

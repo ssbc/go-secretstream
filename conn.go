@@ -3,10 +3,12 @@
 package secretstream
 
 import (
+	"bytes"
 	"encoding/base64"
-	"io"
 	"net"
 	"time"
+
+	"go.cryptoscope.co/secretstream/boxstream"
 
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -33,28 +35,54 @@ func (a Addr) String() string {
 
 // Conn is a boxstream wrapped net.Conn
 type Conn struct {
-	io.Reader
-	io.WriteCloser
 	conn net.Conn
+
+	boxer   *boxstream.Boxer
+	unboxer *boxstream.Unboxer
+	recvMsg []byte // last message read from unboxer
 
 	// public keys
 	local, remote []byte
 }
 
+// Read implements io.Reader.
+func (conn *Conn) Read(p []byte) (int, error) {
+	if len(conn.recvMsg) == 0 {
+		msg, err := conn.unboxer.ReadMessage()
+		if err != nil {
+			return 0, err
+		}
+		conn.recvMsg = msg
+	}
+	n := copy(p, conn.recvMsg)
+	conn.recvMsg = conn.recvMsg[n:]
+	return n, nil
+}
+
+// Write implements io.Writer.
+func (conn *Conn) Write(p []byte) (int, error) {
+	for buf := bytes.NewBuffer(p); buf.Len() > 0; {
+		if err := conn.boxer.WriteMessage(buf.Next(boxstream.MaxSegmentSize)); err != nil {
+			return 0, err
+		}
+	}
+	return len(p), nil
+}
+
 // Close closes the underlying net.Conn
 func (conn *Conn) Close() error {
-	werr := conn.WriteCloser.Close()
+	gerr := conn.boxer.WriteGoodbye()
 	cerr := conn.conn.Close()
 
-	werr = errors.Wrap(werr, "boxstream: error closing boxer")
+	gerr = errors.Wrap(gerr, "boxstream: error writing goodbye")
 	cerr = errors.Wrap(cerr, "boxstream: error closing conn")
 
-	if werr != nil && cerr != nil {
-		return errors.Wrap(multierror.Append(werr, cerr), "error closing both boxer and conn")
+	if gerr != nil && cerr != nil {
+		return errors.Wrap(multierror.Append(gerr, cerr), "error writing goodbye and closing conn")
 	}
 
-	if werr != nil {
-		return werr
+	if gerr != nil {
+		return gerr
 	}
 
 	if cerr != nil {

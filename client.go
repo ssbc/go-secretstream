@@ -43,11 +43,11 @@ func (c *Client) ConnWrapper(pubKey [ed25519.PublicKeySize]byte) netwrap.ConnWra
 		deKey, deNonce := state.GetBoxstreamDecKeys()
 
 		boxed := &Conn{
-			Reader:      boxstream.NewUnboxer(conn, &deNonce, &deKey),
-			WriteCloser: boxstream.NewBoxer(conn, &enNonce, &enKey),
-			conn:        conn,
-			local:       c.kp.Public[:],
-			remote:      state.Remote(),
+			boxer:   boxstream.NewBoxer(conn, &enNonce, &enKey),
+			unboxer: boxstream.NewUnboxer(conn, &deNonce, &deKey),
+			conn:    conn,
+			local:   c.kp.Public[:],
+			remote:  state.Remote(),
 		}
 
 		return boxed, nil
