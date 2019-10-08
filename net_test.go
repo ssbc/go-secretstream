@@ -51,7 +51,7 @@ func mkCheck(errc chan<- error) func(err error) {
 
 func mergedErrors(cs ...<-chan error) <-chan error {
 	var wg sync.WaitGroup
-	out := make(chan error)
+	out := make(chan error, 1)
 
 	output := func(c <-chan error) {
 		for a := range c {
@@ -193,6 +193,79 @@ func TestNetClose(t *testing.T) {
 	}
 }
 
+// a concurrent write might produce a race on the nonce
+func TestRaceClose(t *testing.T) {
+	r := require.New(t)
+
+	s, err := NewServer(*serverKeys, appKey)
+	r.NoError(err)
+
+	l, err := netwrap.Listen(&net.TCPAddr{IP: net.IP{127, 0, 0, 1}}, s.ListenerWrapper())
+	r.NoError(err)
+
+	// 1 MiB
+	testData := make([]byte, 1024*1024)
+	for i, _ := range testData {
+		testData[i] = byte(rand.Int() % 255)
+	}
+
+	srvErrc := make(chan error, 1)
+
+	srving := make(chan net.Conn)
+	go func() {
+		check := mkCheck(srvErrc)
+		c, err := l.Accept()
+		check(err)
+
+		// check(l.Close()) // one connection is enough
+		srving <- c // give the conn to a _connection pool_
+
+		// write one byte at a time, just to make this case more likely
+		for b := bytes.NewBuffer(testData); b.Len() > 0; {
+			_, err = c.Write(b.Next(1))
+			if oerr, ok := err.(*net.OpError); ok {
+				if oerr.Err.Error() == "use of closed network connection" {
+					close(srvErrc)
+					return
+				}
+			}
+			check(err)
+		}
+
+		check(c.Close())
+		close(srvErrc)
+	}()
+
+	// another part of the stack might decide to close it as it's being used
+	closeErrc := make(chan error, 1)
+	go func() {
+		check := mkCheck(closeErrc)
+		c := <-srving
+		check(c.Close())
+		close(closeErrc)
+	}()
+
+	c, err := NewClient(*clientKeys, appKey)
+	r.NoError(err)
+
+	client, err := netwrap.Dial(netwrap.GetAddr(l.Addr(), "tcp"), c.ConnWrapper(serverKeys.Public))
+	r.NoError(err)
+
+	recData := make([]byte, 1024*1024)
+	_, err = io.ReadFull(client, recData)
+	r.Error(err)
+
+	err = client.Close()
+	if err != nil {
+		t.Error("failed to close client", err)
+	}
+
+	i := 0
+	for e := range mergedErrors(srvErrc, closeErrc) {
+		r.NoError(e, "err %d from chan", i)
+		i++
+	}
+}
 
 func TestNetCloseEarly(t *testing.T) {
 	r := require.New(t)
@@ -219,12 +292,13 @@ func TestNetCloseEarly(t *testing.T) {
 		c, err = l.Accept()
 		check(err)
 
+		check(l.Close()) // one connection is enough
+
 		// short write
 		_, err = c.Write(testData[:10])
 		check(err)
 
 		check(c.Close())
-		check(l.Close())
 		close(srvErrc)
 	}()
 	c, err := NewClient(*clientKeys, appKey)
