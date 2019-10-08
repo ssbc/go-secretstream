@@ -8,6 +8,7 @@ package boxstream
 import (
 	"encoding/binary"
 	"io"
+	"sync"
 
 	"golang.org/x/crypto/nacl/secretbox"
 )
@@ -24,6 +25,7 @@ var goodbye [18]byte
 
 // Boxer encrypts everything that is written to it
 type Boxer struct {
+	l      sync.Mutex
 	w      io.Writer
 	secret *[32]byte
 	nonce  *[24]byte
@@ -35,6 +37,9 @@ func (b *Boxer) WriteMessage(msg []byte) error {
 	if len(msg) > MaxSegmentSize {
 		panic("message exceeds maximum segment size")
 	}
+	b.l.Lock()
+	defer b.l.Unlock()
+
 	headerNonce := *b.nonce
 	increment(b.nonce)
 	bodyNonce := *b.nonce
@@ -60,6 +65,8 @@ func (b *Boxer) WriteMessage(msg []byte) error {
 
 // WriteGoodbye writes the 'goodbye' protocol message to the underlying writer.
 func (b *Boxer) WriteGoodbye() error {
+	b.l.Lock()
+	defer b.l.Unlock()
 	_, err := b.w.Write(secretbox.Seal(nil, goodbye[:], b.nonce, b.secret))
 	return err
 }
