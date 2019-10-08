@@ -5,10 +5,12 @@ package secretstream
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"math/rand"
 	"net"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -39,6 +41,37 @@ func check(err error) {
 	}
 }
 
+func mkCheck(errc chan<- error) func(err error) {
+	return func(err error) {
+		if err != nil {
+			errc <- err
+		}
+	}
+}
+
+func mergedErrors(cs ...<-chan error) <-chan error {
+	var wg sync.WaitGroup
+	out := make(chan error)
+
+	output := func(c <-chan error) {
+		for a := range c {
+			out <- a
+		}
+		wg.Done()
+	}
+
+	wg.Add(len(cs))
+	for _, c := range cs {
+		go output(c)
+	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+	return out
+}
+
 func TestNet(t *testing.T) {
 	r := require.New(t)
 
@@ -50,25 +83,31 @@ func TestNet(t *testing.T) {
 
 	testData := strings.Repeat("Hello, World!", 50)
 
+	srvErrc := make(chan error)
+	check := mkCheck(srvErrc)
 	go func() {
 		var (
 			conn net.Conn
 			err  error
 		)
 		conn, err = l.Accept()
-		r.NoError(err)
+		check(err)
 
 		_, err = conn.Write(appKey)
-		r.NoError(err)
+		check(err)
 
 		buf := make([]byte, len(testData))
 		_, err = io.ReadFull(conn, buf)
-		r.NoError(err)
+		check(err)
 
-		r.Equal(string(buf), testData, "server read wrong bytes")
+		if string(buf) != testData {
+			fmt.Errorf("server read wrong bytes: %x", buf)
+			return
+		}
 
-		r.NoError(conn.Close())
-		r.NoError(l.Close())
+		check(conn.Close())
+		check(l.Close())
+		close(srvErrc)
 	}()
 
 	c, err := NewClient(*clientKeys, appKey)
@@ -92,6 +131,13 @@ func TestNet(t *testing.T) {
 	r.NoError(err)
 
 	r.NoError(conn.Close(), "failed to close conn")
+
+	i := 0
+	for e := range srvErrc {
+		r.NoError(e, "err %d from chan", i)
+		i++
+	}
+
 }
 
 func TestNetClose(t *testing.T) {
@@ -109,22 +155,23 @@ func TestNetClose(t *testing.T) {
 		testData[i] = byte(rand.Int() % 255)
 	}
 
-	done := make(chan struct{})
+	srvErrc := make(chan error)
+	check := mkCheck(srvErrc)
 	go func() {
 		var (
 			c   net.Conn
 			err error
 		)
 		c, err = l.Accept()
-		r.NoError(err)
+		check(err)
 
 		_, err = c.Write(testData)
-		r.NoError(err)
+		check(err)
 		// Immediately close conn after Write()
 
-		<-done
-		r.NoError(c.Close())
-		r.NoError(l.Close())
+		check(c.Close())
+		check(l.Close())
+		close(srvErrc)
 	}()
 	c, err := NewClient(*clientKeys, appKey)
 	r.NoError(err)
@@ -136,12 +183,16 @@ func TestNetClose(t *testing.T) {
 	_, err = io.ReadFull(client, recData)
 	r.NoError(err)
 	r.Equal(recData, testData, "client read wrong bytes")
-	close(done)
 
 	r.NoError(client.Close(), "failed to close client")
+
+	i := 0
+	for e := range srvErrc {
+		r.NoError(e, "err %d from chan", i)
+		i++
+	}
 }
 
-// TODO add tests for incomplete boxes and see that the goroutine piping cleans up nicely
 
 func TestNetCloseEarly(t *testing.T) {
 	r := require.New(t)
@@ -158,20 +209,23 @@ func TestNetCloseEarly(t *testing.T) {
 		testData[i] = byte(rand.Int() % 255)
 	}
 
+	srvErrc := make(chan error)
+	check := mkCheck(srvErrc)
 	go func() {
 		var (
 			c   net.Conn
 			err error
 		)
 		c, err = l.Accept()
-		r.NoError(err)
+		check(err)
 
 		// short write
 		_, err = c.Write(testData[:10])
-		r.NoError(err)
+		check(err)
 
-		r.NoError(c.Close())
-		r.NoError(l.Close())
+		check(c.Close())
+		check(l.Close())
+		close(srvErrc)
 	}()
 	c, err := NewClient(*clientKeys, appKey)
 	r.NoError(err)
@@ -186,5 +240,11 @@ func TestNetCloseEarly(t *testing.T) {
 	err = client.Close()
 	if err != nil {
 		t.Error("failed to close client", err)
+	}
+
+	i := 0
+	for e := range srvErrc {
+		r.NoError(e, "err %d from chan", i)
+		i++
 	}
 }
