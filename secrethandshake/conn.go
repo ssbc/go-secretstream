@@ -10,7 +10,7 @@ import (
 	"go.cryptoscope.co/secretstream/internal/lo25519"
 
 	"github.com/agl/ed25519"
-	"github.com/pkg/errors"
+	"github.com/rotisserie/eris"
 )
 
 type ErrProtocol struct {
@@ -61,14 +61,14 @@ func Client(state *State, conn io.ReadWriter) (err error) {
 	// send challenge
 	_, err = conn.Write(state.createChallenge())
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: sending challenge failed.")
+		return eris.Wrapf(err, "secrethandshake: sending challenge failed.")
 	}
 
 	// recv challenge
 	chalResp := make([]byte, ChallengeLength)
 	_, err = io.ReadFull(conn, chalResp)
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: receiving challenge failed.")
+		return eris.Wrapf(err, "secrethandshake: receiving challenge failed.")
 	}
 
 	// verify challenge
@@ -79,14 +79,14 @@ func Client(state *State, conn io.ReadWriter) (err error) {
 	// send authentication vector
 	_, err = conn.Write(state.createClientAuth())
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: sending client auth failed.")
+		return eris.Wrapf(err, "secrethandshake: sending client auth failed.")
 	}
 
 	// recv authentication vector
 	boxedSig := make([]byte, ServerAuthLength)
 	_, err = io.ReadFull(conn, boxedSig)
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: receiving server auth failed")
+		return eris.Wrapf(err, "secrethandshake: receiving server auth failed")
 	}
 
 	// authenticate remote
@@ -104,7 +104,7 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 	challenge := make([]byte, ChallengeLength)
 	_, err = io.ReadFull(conn, challenge)
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: receiving challenge failed")
+		return eris.Wrapf(err, "secrethandshake: receiving challenge failed")
 	}
 
 	// verify challenge
@@ -115,14 +115,14 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 	// send challenge
 	_, err = conn.Write(state.createChallenge())
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: sending server challenge failed.")
+		return eris.Wrapf(err, "secrethandshake: sending server challenge failed.")
 	}
 
 	// recv authentication vector
 	hello := make([]byte, ClientAuthLength)
 	_, err = io.ReadFull(conn, hello)
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: receiving client hello failed")
+		return eris.Wrapf(err, "secrethandshake: receiving client hello failed")
 	}
 
 	// authenticate remote
@@ -133,7 +133,7 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 	// accept
 	_, err = conn.Write(state.createServerAccept())
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: sending server auth accept failed.")
+		return eris.Wrapf(err, "secrethandshake: sending server auth accept failed.")
 	}
 
 	state.cleanSecrets()
