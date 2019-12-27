@@ -8,7 +8,6 @@ import (
 	"go.cryptoscope.co/secretstream/boxstream"
 	"go.cryptoscope.co/secretstream/secrethandshake"
 
-	"github.com/pkg/errors"
 	"go.cryptoscope.co/netwrap"
 )
 
@@ -33,12 +32,12 @@ func (s *Server) ConnWrapper() netwrap.ConnWrapper {
 	return func(conn net.Conn) (net.Conn, error) {
 		state, err := secrethandshake.NewServerState(s.appKey, s.keyPair)
 		if err != nil {
-			return nil, errors.Wrap(err, "error building server state")
+			return nil, err
 		}
 
 		err = secrethandshake.Server(state, conn)
 		if err != nil {
-			return nil, errors.Wrap(err, "error performing handshake")
+			return nil, err
 		}
 
 		enKey, enNonce := state.GetBoxstreamEncKeys()

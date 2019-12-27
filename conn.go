@@ -5,13 +5,14 @@ package secretstream
 import (
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"net"
+	"os"
+	"syscall"
 	"time"
 
 	"go.cryptoscope.co/secretstream/boxstream"
 
-	multierror "github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
 	"go.cryptoscope.co/netwrap"
 )
 
@@ -72,20 +73,24 @@ func (conn *Conn) Write(p []byte) (int, error) {
 // Close closes the underlying net.Conn
 func (conn *Conn) Close() error {
 	gerr := conn.boxer.WriteGoodbye()
-	cerr := conn.conn.Close()
-
-	gerr = errors.Wrap(gerr, "boxstream: error writing goodbye")
-	cerr = errors.Wrap(cerr, "boxstream: error closing conn")
-
-	if gerr != nil && cerr != nil {
-		return errors.Wrap(multierror.Append(gerr, cerr), "error writing goodbye and closing conn")
-	}
-
 	if gerr != nil {
+		netErr := new(net.OpError)
+		if errors.As(gerr, &netErr) {
+			var sysCallErr = new(os.SyscallError)
+			if errors.As(netErr.Err, &sysCallErr) {
+				action := sysCallErr.Unwrap()
+				if action == syscall.ECONNRESET || action == syscall.EPIPE {
+					return nil
+				}
+			}
+			if netErr.Err.Error() == "use of closed network connection" {
+				return nil
+			}
+		}
 		return gerr
 	}
 
-	if cerr != nil {
+	if cerr := conn.conn.Close(); cerr != nil {
 		return cerr
 	}
 
