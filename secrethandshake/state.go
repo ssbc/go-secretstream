@@ -21,7 +21,6 @@ import (
 
 	"github.com/agl/ed25519"
 	"github.com/agl/ed25519/extra25519"
-	"github.com/rotisserie/eris"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/nacl/box"
 )
@@ -52,14 +51,14 @@ type EdKeyPair struct {
 func NewKeyPair(public, secret []byte) (*EdKeyPair, error) {
 	var kp EdKeyPair
 	if n := copy(kp.Secret[:], secret); n != ed25519.PrivateKeySize {
-		return nil, eris.Errorf("NewKeyPair: invalid private key size:%d", n)
+		return nil, ErrKeySize{tipe: "private", n: n}
 	}
 	if n := copy(kp.Public[:], public); n != ed25519.PublicKeySize {
-		return nil, eris.Errorf("NewKeyPair: invalid public key size:%d", n)
+		return nil, ErrKeySize{tipe: "public", n: n}
 	}
 
 	if lo25519.IsEdLowOrder(public) {
-		return nil, eris.Errorf("NewKeyPair: invalid public key")
+		return nil, ErrInvalidKeyPair
 	}
 
 	return &kp, nil
@@ -90,7 +89,7 @@ func NewServerState(appKey []byte, local EdKeyPair) (*State, error) {
 
 // newState initializes the state needed by both client and server
 func newState(appKey []byte, local EdKeyPair) (*State, error) {
-	pubKey, secKey, _ := box.GenerateKey(rand.Reader)
+	pubKey, secKey, err := box.GenerateKey(rand.Reader)
 
 	s := State{
 		appKey: appKey,
@@ -99,7 +98,7 @@ func newState(appKey []byte, local EdKeyPair) (*State, error) {
 	copy(s.localExchange.Secret[:], secKey[:])
 	s.local = local
 
-	return &s, nil
+	return &s, err
 }
 
 // createChallenge returns a buffer with a challenge

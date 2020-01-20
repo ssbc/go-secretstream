@@ -5,7 +5,6 @@ package secretstream
 import (
 	"net"
 
-	"github.com/rotisserie/eris"
 	"go.cryptoscope.co/secretstream/boxstream"
 	"go.cryptoscope.co/secretstream/secrethandshake"
 
@@ -33,12 +32,12 @@ func (s *Server) ConnWrapper() netwrap.ConnWrapper {
 	return func(conn net.Conn) (net.Conn, error) {
 		state, err := secrethandshake.NewServerState(s.appKey, s.keyPair)
 		if err != nil {
-			return nil, eris.Wrap(err, "error building server state")
+			return nil, err
 		}
 
 		err = secrethandshake.Server(state, conn)
 		if err != nil {
-			return nil, eris.Wrap(err, "error performing handshake")
+			return nil, err
 		}
 
 		enKey, enNonce := state.GetBoxstreamEncKeys()

@@ -13,7 +13,6 @@ import (
 
 	"go.cryptoscope.co/secretstream/boxstream"
 
-	"github.com/rotisserie/eris"
 	"go.cryptoscope.co/netwrap"
 )
 
@@ -89,9 +88,8 @@ func (conn *Conn) Close() error {
 		return gerr
 	}
 
-	cerr := conn.conn.Close()
-	if cerr != nil {
-		return eris.Wrap(cerr, "boxstream: error closing conn")
+	if cerr := conn.conn.Close(); cerr != nil {
+		return cerr
 	}
 
 	return nil

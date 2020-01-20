@@ -4,29 +4,12 @@ package secrethandshake
 
 import (
 	"crypto/rand"
-	"fmt"
 	"io"
 
 	"go.cryptoscope.co/secretstream/internal/lo25519"
 
 	"github.com/agl/ed25519"
-	"github.com/rotisserie/eris"
 )
-
-type ErrProtocol struct {
-	code int
-}
-
-func (eh ErrProtocol) Error() string {
-	switch eh.code {
-	case 0:
-		return "secrethandshake: Wrong protocol version?"
-	case 1:
-		return "secrethandshake: other side not authenticated"
-	default:
-		return fmt.Sprintf("shs: unhandled error %d", eh)
-	}
-}
 
 // ChallengeLength is the length of a challenge message in bytes
 const ChallengeLength = 64
@@ -61,14 +44,14 @@ func Client(state *State, conn io.ReadWriter) (err error) {
 	// send challenge
 	_, err = conn.Write(state.createChallenge())
 	if err != nil {
-		return eris.Wrapf(err, "secrethandshake: sending challenge failed.")
+		return ErrProcessing{where: "sending challenge", cause: err}
 	}
 
 	// recv challenge
 	chalResp := make([]byte, ChallengeLength)
 	_, err = io.ReadFull(conn, chalResp)
 	if err != nil {
-		return eris.Wrapf(err, "secrethandshake: receiving challenge failed.")
+		return ErrProcessing{where: "receiving challenge", cause: err}
 	}
 
 	// verify challenge
@@ -79,14 +62,14 @@ func Client(state *State, conn io.ReadWriter) (err error) {
 	// send authentication vector
 	_, err = conn.Write(state.createClientAuth())
 	if err != nil {
-		return eris.Wrapf(err, "secrethandshake: sending client auth failed.")
+		return ErrProcessing{where: "sending client hello", cause: err}
 	}
 
 	// recv authentication vector
 	boxedSig := make([]byte, ServerAuthLength)
 	_, err = io.ReadFull(conn, boxedSig)
 	if err != nil {
-		return eris.Wrapf(err, "secrethandshake: receiving server auth failed")
+		return ErrProcessing{where: "receiving server auth", cause: err}
 	}
 
 	// authenticate remote
@@ -104,7 +87,7 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 	challenge := make([]byte, ChallengeLength)
 	_, err = io.ReadFull(conn, challenge)
 	if err != nil {
-		return eris.Wrapf(err, "secrethandshake: receiving challenge failed")
+		return ErrProcessing{where: "receiving challenge", cause: err}
 	}
 
 	// verify challenge
@@ -115,14 +98,14 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 	// send challenge
 	_, err = conn.Write(state.createChallenge())
 	if err != nil {
-		return eris.Wrapf(err, "secrethandshake: sending server challenge failed.")
+		return ErrProcessing{where: "sending challenge", cause: err}
 	}
 
 	// recv authentication vector
 	hello := make([]byte, ClientAuthLength)
 	_, err = io.ReadFull(conn, hello)
 	if err != nil {
-		return eris.Wrapf(err, "secrethandshake: receiving client hello failed")
+		return ErrProcessing{where: "receiving client hello", cause: err}
 	}
 
 	// authenticate remote
@@ -133,7 +116,7 @@ func Server(state *State, conn io.ReadWriter) (err error) {
 	// accept
 	_, err = conn.Write(state.createServerAccept())
 	if err != nil {
-		return eris.Wrapf(err, "secrethandshake: sending server auth accept failed.")
+		return ErrProcessing{where: "sending server accept", cause: err}
 	}
 
 	state.cleanSecrets()
