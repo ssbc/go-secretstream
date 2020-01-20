@@ -15,7 +15,11 @@ func TestUnwrapErr(t *testing.T) {
 
 	unwrapped := errors.Unwrap(procErr)
 	if unwrapped != io.EOF {
-		t.Error("not EOF, got:", unwrapped)
+		t.Error("does not unwrap to EOF, got:", unwrapped)
+	}
+
+	if !errors.Is(procErr, io.EOF) {
+		t.Error("errors.Is(err,eof) not true")
 	}
 
 	var encErr = ErrEncoding{
@@ -25,6 +29,11 @@ func TestUnwrapErr(t *testing.T) {
 
 	unwrapped = errors.Unwrap(encErr)
 	if unwrapped != io.ErrUnexpectedEOF {
-		t.Error("not EOF, got:", unwrapped)
+		t.Error("not unexpected EOF, got:", unwrapped)
 	}
+
+	if !errors.Is(encErr, io.ErrUnexpectedEOF) {
+		t.Error("errors.Is(err,unexpected EOF) not true")
+	}
+
 }

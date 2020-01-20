@@ -26,7 +26,7 @@ func (e ErrProtocol) Error() string {
 		return "secrethandshake: other side not authenticated"
 	default:
 
-		return "shs: unhandled error " + strconv.Itoa(e.code)
+		return "secrethandshake: unhandled protocol error " + strconv.Itoa(e.code)
 	}
 }
 
@@ -39,13 +39,12 @@ type ErrProcessing struct {
 
 func (e ErrProcessing) Error() string {
 	errStr := "secrethandshake: failed during data transfer of " + e.where
-	errStr += " : " + e.cause.Error()
+	errStr += ": " + e.cause.Error()
 	return errStr
 }
 
-func (e ErrProcessing) Unwrap() error {
-	return e.cause
-}
+// Unwrap returns the cause
+func (e ErrProcessing) Unwrap() error { return e.cause }
 
 type ErrEncoding struct {
 	what  string
@@ -54,10 +53,9 @@ type ErrEncoding struct {
 
 func (e ErrEncoding) Error() string {
 	errStr := "secrethandshake: failed during encoding task of " + e.what
-	errStr += " : " + e.cause.Error()
+	errStr += ": " + e.cause.Error()
 	return errStr
 }
 
-func (e ErrEncoding) Unwrap() error {
-	return e.cause
-}
+// Unwrap returns the cause
+func (e ErrEncoding) Unwrap() error { return e.cause }
