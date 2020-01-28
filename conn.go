@@ -6,9 +6,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"net"
 	"os"
+	"syscall"
 	"time"
 
 	"go.cryptoscope.co/secretstream/boxstream"
@@ -78,8 +78,10 @@ func (conn *Conn) Close() error {
 		if errors.As(gerr, &netErr) {
 			var sysCallErr = new(os.SyscallError)
 			if errors.As(netErr.Err, &sysCallErr) {
-				fmt.Println("TODO: check EPIPE or closed closed?", netErr.Err)
-				return nil
+				action := sysCallErr.Unwrap()
+				if action == syscall.ECONNRESET || action == syscall.EPIPE {
+					return nil
+				}
 			}
 			if netErr.Err.Error() == "use of closed network connection" {
 				return nil
