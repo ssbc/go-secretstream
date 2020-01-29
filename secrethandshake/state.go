@@ -11,7 +11,6 @@ package secrethandshake
 
 import (
 	"bytes"
-	"fmt"
 	"unsafe" // ☢ ☣
 
 	"crypto/hmac"
@@ -192,23 +191,18 @@ func (s *State) verifyClientAuth(data []byte) bool {
 
 	var (
 		nonce  [24]byte // always 0?
-		openOk bool
 		sig    [ed25519.SignatureSize]byte
 		public [ed25519.PublicKeySize]byte
-		hello  = make([]byte, 0, len(data)-16)
 	)
 
-	hello, openOk = box.OpenAfterPrecomputation(hello, data, &nonce, &s.secret2)
-	if !openOk && hello == nil {
-		fmt.Println("warning: nil hello")
-	}
+	_, openOk := box.OpenAfterPrecomputation(s.hello[:0], data, &nonce, &s.secret2)
+	// if !openOk && hello == nil {
+	// 	fmt.Println("warning: nil hello")
+	// }
 
 	// subtle API requires an int containing 0 or 1, we only have bool.
 	// we can't branch because openOk is secret.
 	okInt := int(*((*byte)(unsafe.Pointer(&openOk))))
-
-	// this is not super secret data like keys, so we can copy it around
-	copy(s.hello, hello)
 
 	subtle.ConstantTimeCopy(okInt, sig[:], s.hello[:ed25519.SignatureSize])
 	subtle.ConstantTimeCopy(okInt, public[:], s.hello[ed25519.SignatureSize:ed25519.SignatureSize+ed25519.PublicKeySize])
