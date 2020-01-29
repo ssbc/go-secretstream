@@ -130,13 +130,18 @@ func TestAuthWrong(t *testing.T) {
 
 	go func() {
 		err := Server(serverState, rwServer)
-		ch <- err
+		expErr := ErrProtocol{1}
+		if err != expErr {
+			ch <- errors.Wrap(err, "server failed differntly then expected")
+		} else {
+			ch <- nil
+		}
 		wServer.Close()
 	}()
 
 	go func() {
 		err := wrongClient(clientState, rwClient)
-		ch <- err
+		ch <- errors.Wrap(err, "client failed")
 		wClient.Close()
 	}()
 
@@ -190,9 +195,9 @@ func wrongClient(state *State, conn io.ReadWriter) (err error) {
 
 	// recv authentication vector? shouldn't get it
 	boxedSig := make([]byte, ServerAuthLength)
-	_, err = io.ReadFull(conn, boxedSig)
-	if err != io.ErrUnexpectedEOF {
-		return errors.Errorf("wrongClient: expected unepexcted EOF, got %s", err)
+	n, err = io.ReadFull(conn, boxedSig)
+	if err != io.EOF || n != 0 {
+		return errors.Errorf("wrongClient: expected unepexcted EOF, got %s %d", err, n)
 	}
 
 	return nil

@@ -11,8 +11,6 @@ package secrethandshake
 
 import (
 	"bytes"
-	"unsafe" // ☢ ☣
-
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -27,6 +25,13 @@ import (
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/nacl/box"
 )
+
+func init() {
+	err := testMemoryLayoutAssumption()
+	if err != nil {
+		panic(err)
+	}
+}
 
 // State is the state each peer holds during the handshake
 type State struct {
@@ -167,8 +172,6 @@ func (s *State) createClientAuth() []byte {
 	return out
 }
 
-var nullHello [ed25519.SignatureSize + ed25519.PublicKeySize]byte
-
 // verifyClientAuth returns whether a buffer contains a valid clientAuth message
 func (s *State) verifyClientAuth(data []byte) bool {
 	// this branch is okay because there are no secrets involved
@@ -193,16 +196,13 @@ func (s *State) verifyClientAuth(data []byte) bool {
 		nonce  [24]byte // always 0?
 		sig    [ed25519.SignatureSize]byte
 		public [ed25519.PublicKeySize]byte
+		openOk bool
 	)
 
-	_, openOk := box.OpenAfterPrecomputation(s.hello[:0], data, &nonce, &s.secret2)
-	// if !openOk && hello == nil {
-	// 	fmt.Println("warning: nil hello")
-	// }
+	_, openOk = box.OpenAfterPrecomputation(s.hello[:0], data, &nonce, &s.secret2)
 
-	// subtle API requires an int containing 0 or 1, we only have bool.
-	// we can't branch because openOk is secret.
-	okInt := int(*((*byte)(unsafe.Pointer(&openOk))))
+	// see unsafecast_test.go
+	okInt := castBoolToInt(&openOk)
 
 	subtle.ConstantTimeCopy(okInt, sig[:], s.hello[:ed25519.SignatureSize])
 	subtle.ConstantTimeCopy(okInt, public[:], s.hello[ed25519.SignatureSize:ed25519.SignatureSize+ed25519.PublicKeySize])
