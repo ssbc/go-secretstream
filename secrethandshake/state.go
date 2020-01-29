@@ -11,11 +11,13 @@ package secrethandshake
 
 import (
 	"bytes"
+	"unsafe" // ☢ ☣
 
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
+	"crypto/subtle"
 
 	"go.cryptoscope.co/secretstream/internal/lo25519"
 
@@ -169,6 +171,11 @@ var nullHello [ed25519.SignatureSize + ed25519.PublicKeySize]byte
 
 // verifyClientAuth returns whether a buffer contains a valid clientAuth message
 func (s *State) verifyClientAuth(data []byte) bool {
+	// this branch is okay because there are no secrets involved
+	if len(data) != ed25519.SignatureSize+ed25519.PublicKeySize+box.Overhead {
+		return false
+	}
+
 	var cvSec, aBob [32]byte
 	extra25519.PrivateKeyToCurve25519(&cvSec, &s.local.Secret)
 	curve25519.ScalarMult(&aBob, &cvSec, &s.remoteExchange.Public)
@@ -182,33 +189,20 @@ func (s *State) verifyClientAuth(data []byte) bool {
 
 	s.hello = make([]byte, 0, len(data)-16)
 
-	var nonce [24]byte // always 0?
-	var openOk bool
+	var (
+		nonce  [24]byte // always 0?
+		openOk bool
+		sig    [ed25519.SignatureSize]byte
+		public [ed25519.PublicKeySize]byte
+	)
+
 	s.hello, openOk = box.OpenAfterPrecomputation(s.hello, data, &nonce, &s.secret2)
+	// subtle API requires an int containing 0 or 1, we only have bool.
+	// we can't branch because openOk is secret.
+	okInt := int(*((*byte)(unsafe.Pointer(&openOk))))
 
-	var sig [ed25519.SignatureSize]byte
-	var public [ed25519.PublicKeySize]byte
-	/* TODO: is this const time!?!
-
-	   this is definetly not:
-	   if !openOK {
-	   	s.hello = nullHello
-	   }
-	   copy(sig, ...)
-	   copy(pub, ...)
-	*/
-	if openOk {
-		copy(sig[:], s.hello[:ed25519.SignatureSize])
-		copy(public[:], s.hello[ed25519.SignatureSize:])
-
-	} else {
-		copy(sig[:], nullHello[:ed25519.SignatureSize])
-		copy(public[:], nullHello[ed25519.SignatureSize:])
-	}
-
-	if lo25519.IsEdLowOrder(sig[:32]) {
-		openOk = false
-	}
+	subtle.ConstantTimeCopy(okInt, sig[:], s.hello[:ed25519.SignatureSize])
+	subtle.ConstantTimeCopy(okInt, public[:], s.hello[ed25519.SignatureSize:ed25519.SignatureSize+ed25519.PublicKeySize])
 
 	var sigMsg bytes.Buffer
 	sigMsg.Write(s.appKey)
@@ -217,7 +211,9 @@ func (s *State) verifyClientAuth(data []byte) bool {
 	verifyOk := ed25519.Verify(&public, sigMsg.Bytes(), &sig)
 
 	copy(s.remotePublic[:], public[:])
-	return openOk && verifyOk
+
+	keyOk := !lo25519.IsEdLowOrder(sig[:32])
+	return openOk && keyOk && verifyOk
 }
 
 // createServerAccept returns a buffer containing a serverAccept message
