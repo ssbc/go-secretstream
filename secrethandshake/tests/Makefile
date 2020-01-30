@@ -1,3 +1,7 @@
+clean:
+	rm server
+	rm client
+
 server: server.go
 	go build server.go
 

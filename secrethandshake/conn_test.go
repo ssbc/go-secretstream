@@ -4,14 +4,14 @@ package secrethandshake
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/pkg/errors"
 )
 
 // StupidRandom always reads itself. Goal is determinism.
@@ -132,7 +132,7 @@ func TestAuthWrong(t *testing.T) {
 		err := Server(serverState, rwServer)
 		expErr := ErrProtocol{1}
 		if err != expErr {
-			ch <- errors.Wrap(err, "server failed differntly then expected")
+			ch <- fmt.Errorf("server failed differntly then expected: %w", err)
 		} else {
 			ch <- nil
 		}
@@ -141,7 +141,7 @@ func TestAuthWrong(t *testing.T) {
 
 	go func() {
 		err := wrongClient(clientState, rwClient)
-		ch <- errors.Wrap(err, "client failed")
+		ch <- fmt.Errorf("client failed: %w", err)
 		wClient.Close()
 	}()
 
@@ -162,19 +162,19 @@ func TestAuthWrong(t *testing.T) {
 func wrongClient(state *State, conn io.ReadWriter) (err error) {
 	_, err = io.Copy(conn, bytes.NewReader(state.createChallenge()))
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: sending challenge failed.")
+		return fmt.Errorf("secrethandshake: sending challenge failed. %w", err)
 	}
 
 	// recv challenge
 	chalResp := make([]byte, ChallengeLength)
 	_, err = io.ReadFull(conn, chalResp)
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: receiving challenge failed.")
+		return fmt.Errorf("secrethandshake: receiving challenge failed. %w", err)
 	}
 
 	// verify challenge
 	if !state.verifyChallenge(chalResp) {
-		return errors.Errorf("secrethandshake: challenge didn't verify")
+		return errors.New("secrethandshake: challenge didn't verify")
 	}
 
 	// prepare authentication vector
@@ -190,14 +190,14 @@ func wrongClient(state *State, conn io.ReadWriter) (err error) {
 
 	_, err = io.Copy(conn, bytes.NewReader(cauth))
 	if err != nil {
-		return errors.Wrapf(err, "secrethandshake: sending client auth failed.")
+		return fmt.Errorf(err, "secrethandshake: sending client auth failed. %w", err)
 	}
 
 	// recv authentication vector? shouldn't get it
 	boxedSig := make([]byte, ServerAuthLength)
 	n, err = io.ReadFull(conn, boxedSig)
 	if err != io.EOF || n != 0 {
-		return errors.Errorf("wrongClient: expected unepexcted EOF, got %s %d", err, n)
+		return fmt.Errorf("wrongClient: expected unepexcted EOF, got %d bytes and err: %w", n, err)
 	}
 
 	return nil
