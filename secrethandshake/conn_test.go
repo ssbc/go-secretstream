@@ -8,8 +8,6 @@ import (
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/pkg/errors"
 )
 
 // StupidRandom always reads itself. Goal is determinism.
@@ -68,13 +66,13 @@ func TestAuth(t *testing.T) {
 
 	go func() {
 		err := Server(serverState, rwServer)
-		ch <- errors.Wrap(err, "server failed")
+		ch <- ErrProcessing{where: "server", cause: err}
 		wServer.Close()
 	}()
 
 	go func() {
 		err := Client(clientState, rwClient)
-		ch <- errors.Wrap(err, "client failed")
+		ch <- ErrProcessing{where: "client", cause: err}
 		wClient.Close()
 	}()
 

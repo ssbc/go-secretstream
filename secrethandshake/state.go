@@ -16,7 +16,6 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 
-	"github.com/pkg/errors"
 	"go.cryptoscope.co/secretstream/internal/lo25519"
 	"go.cryptoscope.co/secretstream/secrethandshake/internal/extra25519"
 	"golang.org/x/crypto/curve25519"
@@ -81,7 +80,7 @@ func NewClientState(appKey []byte, local EdKeyPair, remotePublic ed25519.PublicK
 
 	state.remotePublic = remotePublic
 	if l := len(state.remotePublic); l != ed25519.PublicKeySize {
-		return nil, errors.Errorf("shs: invalid size for remote pubkey %d", l)
+		return nil, ErrKeySize{tipe: "remote/public", n: l}
 	}
 
 	return state, err
@@ -96,7 +95,7 @@ func NewServerState(appKey []byte, local EdKeyPair) (*State, error) {
 func newState(appKey []byte, local EdKeyPair) (*State, error) {
 	pubKey, secKey, err := box.GenerateKey(rand.Reader)
 	if err != nil {
-		return nil, errors.Wrap(err, "shs/newState: box.GenKey failed")
+		return nil, err
 	}
 
 	s := State{
@@ -108,7 +107,6 @@ func newState(appKey []byte, local EdKeyPair) (*State, error) {
 	s.local = local
 
 	if l := len(s.local.Public); l != ed25519.PublicKeySize {
-
 		return nil, ErrKeySize{tipe: "eph/public", n: l}
 	}
 
