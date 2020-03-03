@@ -49,16 +49,18 @@ type EdKeyPair struct {
 
 func NewKeyPair(public, secret []byte) (*EdKeyPair, error) {
 	var kp EdKeyPair
-	if n := copy(kp.Secret[:], secret); n != ed25519.PrivateKeySize {
+	if n := len(secret); n != ed25519.PrivateKeySize {
 		return nil, errors.Errorf("NewKeyPair: invalid private key size:%d", n)
 	}
-	if n := copy(kp.Public[:], public); n != ed25519.PublicKeySize {
+	kp.Secret = secret
+	if n := len(public); n != ed25519.PublicKeySize {
 		return nil, errors.Errorf("NewKeyPair: invalid public key size:%d", n)
 	}
 
 	if lo25519.IsEdLowOrder(public) {
 		return nil, errors.Errorf("NewKeyPair: invalid public key")
 	}
+	kp.Public = public
 
 	return &kp, nil
 }
