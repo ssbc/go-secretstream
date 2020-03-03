@@ -7,7 +7,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
 	go.cryptoscope.co/netwrap v0.1.0
-	golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc
+	golang.org/x/crypto v0.0.0-20200303113948-2939d6771b24
 	golang.org/x/sys v0.0.0-20191007154456-ef33b2fb2c41 // indirect
 )
 
