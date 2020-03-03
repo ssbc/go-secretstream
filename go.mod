@@ -3,7 +3,6 @@ module go.cryptoscope.co/secretstream
 require (
 	github.com/cryptix/go v1.5.0
 	github.com/go-kit/kit v0.9.0 // indirect
-	github.com/hashicorp/go-multierror v1.0.0
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
 	go.cryptoscope.co/netwrap v0.1.0

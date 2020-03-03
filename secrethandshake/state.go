@@ -50,15 +50,16 @@ type EdKeyPair struct {
 func NewKeyPair(public, secret []byte) (*EdKeyPair, error) {
 	var kp EdKeyPair
 	if n := len(secret); n != ed25519.PrivateKeySize {
-		return nil, errors.Errorf("NewKeyPair: invalid private key size:%d", n)
+		return nil, ErrKeySize{tipe: "private", n: n}
 	}
 	kp.Secret = secret
+
 	if n := len(public); n != ed25519.PublicKeySize {
-		return nil, errors.Errorf("NewKeyPair: invalid public key size:%d", n)
+		return nil, ErrKeySize{tipe: "public", n: n}
 	}
 
 	if lo25519.IsEdLowOrder(public) {
-		return nil, errors.Errorf("NewKeyPair: invalid public key")
+		return nil, ErrInvalidKeyPair
 	}
 	kp.Public = public
 
@@ -107,11 +108,12 @@ func newState(appKey []byte, local EdKeyPair) (*State, error) {
 	s.local = local
 
 	if l := len(s.local.Public); l != ed25519.PublicKeySize {
-		return nil, errors.Errorf("shs/newState: invalid size for local pubkey %d", l)
+
+		return nil, ErrKeySize{tipe: "eph/public", n: l}
 	}
 
 	if l := len(s.local.Secret); l != ed25519.PrivateKeySize {
-		return nil, errors.Errorf("shs/newState: invalid size for local secret %d", l)
+		return nil, ErrKeySize{tipe: "eph/private", n: l}
 	}
 
 	return &s, nil
