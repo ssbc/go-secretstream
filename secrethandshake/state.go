@@ -15,7 +15,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
-	"log"
 
 	"github.com/pkg/errors"
 	"go.cryptoscope.co/secretstream/internal/lo25519"
@@ -283,7 +282,6 @@ func (s *State) verifyServerAccept(boxedOkay []byte) bool {
 	var nonce [24]byte // always 0?
 	sig := make([]byte, 0, len(boxedOkay)-16)
 	sig, openOk := box.OpenAfterPrecomputation(nil, boxedOkay, &nonce, &s.secret3)
-	log.Print("serve open:", openOk)
 
 	var sigMsg bytes.Buffer
 	sigMsg.Write(s.appKey)
@@ -291,7 +289,6 @@ func (s *State) verifyServerAccept(boxedOkay []byte) bool {
 	sigMsg.Write(s.secHash)
 
 	verifyOk := ed25519.Verify(s.remotePublic, sigMsg.Bytes(), sig)
-	log.Print("serve verify:", verifyOk)
 	return verifyOk && openOk
 }
 
