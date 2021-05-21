@@ -7,8 +7,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/cryptix/go/logging"
 	"go.cryptoscope.co/secretstream/secrethandshake"
+	"go.mindeco.de/logging"
 )
 
 var check = logging.CheckFatal

@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cryptix/go/logging/logtest"
-	"github.com/cryptix/go/proc"
+	"go.mindeco.de/logging/logtest"
+	"go.mindeco.de/proc"
 )
 
 const cnt = 1000

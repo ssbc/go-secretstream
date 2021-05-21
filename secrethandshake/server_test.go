@@ -8,8 +8,8 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/cryptix/go/logging/logtest"
-	"github.com/cryptix/go/proc"
+	"go.mindeco.de/logging/logtest"
+	"go.mindeco.de/proc"
 )
 
 func TestServer(t *testing.T) {
