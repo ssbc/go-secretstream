@@ -66,22 +66,22 @@ func TestAuth(t *testing.T) {
 
 	go func() {
 		err := Server(serverState, rwServer)
-		ch <- ErrProcessing{where: "server", cause: err}
+		ch <- err
 		wServer.Close()
 	}()
 
 	go func() {
 		err := Client(clientState, rwClient)
-		ch <- ErrProcessing{where: "client", cause: err}
+		ch <- err
 		wClient.Close()
 	}()
 
 	// t.Error may only be called from this goroutine :/
 	if err = <-ch; err != nil {
-		t.Error(err)
+		t.Errorf("1st ch read: %v", err)
 	}
 	if err = <-ch; err != nil {
-		t.Error(err)
+		t.Errorf("2nd ch read: %v", err)
 	}
 
 	if !reflect.DeepEqual(clientState.secret, serverState.secret) {
