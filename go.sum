@@ -1,7 +1,7 @@
 github.com/PuerkitoBio/goquery v1.5.0/go.mod h1:qD2PgZ9lccMbQlc7eEOjaeRlFQON7xY8kdmcsrnKqMg=
 github.com/andybalholm/cascadia v1.0.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
-github.com/cryptix/golang_x_crypto v0.0.0-20200303113948-2939d6771b24 h1:tCYzn+bTBGDEl+OPb7zZp8HF7wc7TP8nA0MB9FngerA=
-github.com/cryptix/golang_x_crypto v0.0.0-20200303113948-2939d6771b24/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
+github.com/cryptix/golang_x_crypto v0.0.0-20200924101112-886946aabeb8 h1:eJ+NZ2KeNYBPYvshzkPxxKvaWM+h0CgpDyJw0aa6W1Y=
+github.com/cryptix/golang_x_crypto v0.0.0-20200924101112-886946aabeb8/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
