@@ -4,7 +4,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	go.cryptoscope.co/netwrap v0.1.0
 	go.mindeco.de v1.12.0
-	golang.org/x/crypto v0.0.0-20200924101112-886946aabeb8
+	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 )
 
 go 1.13
