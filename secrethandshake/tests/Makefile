@@ -7,8 +7,8 @@ client: client.go
 test: server client
 	test -d ../shs1-testsuite/node_modules || \
 		( git submodule update --init && \
-		pushd ../shs1-testsuite && \
+		cd ../shs1-testsuite && \
 		npm ci && \
-		popd )
+		cd - )
 	node ../shs1-testsuite/test-server.js ./server
 	node ../shs1-testsuite/test-client.js ./client
