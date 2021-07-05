@@ -27,18 +27,16 @@ func PrivateKeyToCurve25519(curve25519Private *[32]byte, privateKey ed25519.Priv
 
 // PublicKeyToCurve25519 converts an Ed25519 public key into the curve25519
 // public key that would be generated from the same private key.
-func PublicKeyToCurve25519(curve25519Public *[32]byte, publicKey ed25519.PublicKey) bool {
-	var ge [32]byte
-	copy(ge[:], publicKey)
-	if lo25519.IsEdLowOrder(ge[:]) {
+func PublicKeyToCurve25519(curveBytes *[32]byte, edPub ed25519.PublicKey) bool {
+	if lo25519.IsEdLowOrder(edPub) {
 		return false
 	}
 
-	a, err := new(edwards25519.Point).SetBytes(ge[:])
+	edPoint, err := new(edwards25519.Point).SetBytes(edPub)
 	if err != nil {
 		return false
 	}
 
-	copy(curve25519Public[:], a.BytesMontgomery())
+	copy(curveBytes[:], edPoint.BytesMontgomery())
 	return true
 }
