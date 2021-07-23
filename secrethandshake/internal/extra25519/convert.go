@@ -1,4 +1,4 @@
-// blatent grep of github.com/agl/ed25519/extra25519 until we have a better solution
+// Package extra25519 implements the key conversion from ed25519 to curve25519. Nothing more.
 package extra25519
 
 import (
