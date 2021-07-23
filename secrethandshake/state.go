@@ -11,22 +11,24 @@ package secrethandshake
 
 import (
 	"bytes"
-	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
-	"crypto/sha512"
 
 	"go.cryptoscope.co/secretstream/internal/lo25519"
 	"go.cryptoscope.co/secretstream/secrethandshake/internal/extra25519"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/ed25519"
+	"golang.org/x/crypto/nacl/auth"
 	"golang.org/x/crypto/nacl/box"
 )
 
 // State is the state each peer holds during the handshake
 type State struct {
-	appKey, secHash           []byte
-	localAppMac, remoteAppMac []byte
+	appKey [32]byte
+
+	secHash      []byte
+	localAppMac  [32]byte
+	remoteAppMac []byte
 
 	localExchange  CurveKeyPair
 	local          EdKeyPair
@@ -99,9 +101,9 @@ func newState(appKey []byte, local EdKeyPair) (*State, error) {
 	}
 
 	s := State{
-		appKey:       appKey,
 		remotePublic: make([]byte, ed25519.PublicKeySize),
 	}
+	copy(s.appKey[:], appKey)
 	copy(s.localExchange.Public[:], pubKey[:])
 	copy(s.localExchange.Secret[:], secKey[:])
 	s.local = local
@@ -119,10 +121,10 @@ func newState(appKey []byte, local EdKeyPair) (*State, error) {
 
 // createChallenge returns a buffer with a challenge
 func (s *State) createChallenge() []byte {
-	appMacr := hmac.New(sha512.New, s.appKey[:32])
-	appMacr.Write(s.localExchange.Public[:])
-	s.localAppMac = appMacr.Sum(nil)[:32]
-	return append(s.localAppMac, s.localExchange.Public[:]...)
+	mac := auth.Sum(s.localExchange.Public[:], &s.appKey)
+	copy(s.localAppMac[:], mac[:])
+
+	return append(s.localAppMac[:], s.localExchange.Public[:]...)
 }
 
 // verifyChallenge returns whether the passed buffer is valid
@@ -130,9 +132,7 @@ func (s *State) verifyChallenge(ch []byte) bool {
 	mac := ch[:32]
 	remoteEphPubKey := ch[32:]
 
-	appMac := hmac.New(sha512.New, s.appKey[:32])
-	appMac.Write(remoteEphPubKey)
-	ok := hmac.Equal(appMac.Sum(nil)[:32], mac)
+	ok := auth.Verify(mac, remoteEphPubKey, &s.appKey)
 
 	copy(s.remoteExchange.Public[:], remoteEphPubKey)
 	s.remoteAppMac = mac
@@ -159,13 +159,13 @@ func (s *State) createClientAuth() []byte {
 	copy(s.aBob[:], aBob[:])
 
 	secHasher := sha256.New()
-	secHasher.Write(s.appKey)
+	secHasher.Write(s.appKey[:])
 	secHasher.Write(s.secret[:])
 	secHasher.Write(s.aBob[:])
 	copy(s.secret2[:], secHasher.Sum(nil))
 
 	var sigMsg bytes.Buffer
-	sigMsg.Write(s.appKey)
+	sigMsg.Write(s.appKey[:])
 	sigMsg.Write(s.remotePublic[:])
 	sigMsg.Write(s.secHash)
 
@@ -192,7 +192,7 @@ func (s *State) verifyClientAuth(data []byte) bool {
 	copy(s.aBob[:], aBob[:])
 
 	secHasher := sha256.New()
-	secHasher.Write(s.appKey)
+	secHasher.Write(s.appKey[:])
 	secHasher.Write(s.secret[:])
 	secHasher.Write(s.aBob[:])
 	copy(s.secret2[:], secHasher.Sum(nil))
@@ -228,7 +228,7 @@ func (s *State) verifyClientAuth(data []byte) bool {
 	}
 
 	var sigMsg bytes.Buffer
-	sigMsg.Write(s.appKey)
+	sigMsg.Write(s.appKey[:])
 	sigMsg.Write(s.local.Public[:])
 	sigMsg.Write(s.secHash)
 	verifyOk := ed25519.Verify(public, sigMsg.Bytes(), sig)
@@ -248,14 +248,14 @@ func (s *State) createServerAccept() []byte {
 	copy(s.bAlice[:], bAlice[:])
 
 	secHasher := sha256.New()
-	secHasher.Write(s.appKey)
+	secHasher.Write(s.appKey[:])
 	secHasher.Write(s.secret[:])
 	secHasher.Write(s.aBob[:])
 	secHasher.Write(s.bAlice[:])
 	copy(s.secret3[:], secHasher.Sum(nil))
 
 	var sigMsg bytes.Buffer
-	sigMsg.Write(s.appKey)
+	sigMsg.Write(s.appKey[:])
 	sigMsg.Write(s.hello[:])
 	sigMsg.Write(s.secHash)
 
@@ -275,7 +275,7 @@ func (s *State) verifyServerAccept(boxedOkay []byte) bool {
 	copy(s.bAlice[:], bAlice[:])
 
 	secHasher := sha256.New()
-	secHasher.Write(s.appKey)
+	secHasher.Write(s.appKey[:])
 	secHasher.Write(s.secret[:])
 	secHasher.Write(s.aBob[:])
 	secHasher.Write(s.bAlice[:])
@@ -286,7 +286,7 @@ func (s *State) verifyServerAccept(boxedOkay []byte) bool {
 	sig, openOk := box.OpenAfterPrecomputation(nil, boxedOkay, &nonce, &s.secret3)
 
 	var sigMsg bytes.Buffer
-	sigMsg.Write(s.appKey)
+	sigMsg.Write(s.appKey[:])
 	sigMsg.Write(s.hello[:])
 	sigMsg.Write(s.secHash)
 
@@ -342,6 +342,6 @@ func (s *State) GetBoxstreamDecKeys() ([32]byte, [24]byte) {
 	copy(deKey[:], h.Sum(nil))
 
 	var nonce [24]byte
-	copy(nonce[:], s.localAppMac)
+	copy(nonce[:], s.localAppMac[:])
 	return deKey, nonce
 }
