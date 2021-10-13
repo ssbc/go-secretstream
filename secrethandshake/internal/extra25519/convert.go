@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021 The Secretstream Authors
+//
+// SPDX-License-Identifier: MIT
+
 // Package extra25519 implements the key conversion from ed25519 to curve25519. Nothing more.
 package extra25519
 

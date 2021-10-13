@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021 The Secretstream Authors
+//
+// SPDX-License-Identifier: MIT
+
 package lo25519
 
 // edBlacklist is a list of elements of the ed25519 curve that have low order.

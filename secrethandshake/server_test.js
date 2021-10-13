@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: 2021 The Secretstream Authors
+//
 // SPDX-License-Identifier: MIT
+
 var shs = require('secret-handshake')
 var fs = require('fs')
 var pull = require('pull-stream')
