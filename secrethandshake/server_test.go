@@ -1,6 +1,9 @@
-// +build interop_nodejs
-
+// SPDX-FileCopyrightText: 2021 The Secretstream Authors
+//
 // SPDX-License-Identifier: MIT
+
+//go:build interop_nodejs
+// +build interop_nodejs
 
 package secrethandshake
 
@@ -44,5 +47,4 @@ func TestServer(t *testing.T) {
 	if err := Server(serverState, client); err != nil {
 		t.Fatal(err)
 	}
-
 }

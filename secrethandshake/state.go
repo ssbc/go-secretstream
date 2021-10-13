@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2021 The Secretstream Authors
+//
 // SPDX-License-Identifier: MIT
 
 /* Package secrethandshake is a Go implementation of Dominic Tarr's secret-handshake: https://github.com/auditdrivencrypto/secret-handshake

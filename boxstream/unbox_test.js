@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2021 The Secretstream Authors
+//
 // SPDX-License-Identifier: MIT
 
 var boxes = require('pull-box-stream')

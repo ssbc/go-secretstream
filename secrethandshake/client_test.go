@@ -1,6 +1,9 @@
-// +build interop_nodejs
-
+// SPDX-FileCopyrightText: 2021 The Secretstream Authors
+//
 // SPDX-License-Identifier: MIT
+
+//go:build interop_nodejs
+// +build interop_nodejs
 
 package secrethandshake
 
@@ -24,8 +27,8 @@ func TestClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	kpBob := mustLoadTestKeyPair("key.bob.json")
-	kpAlice := mustLoadTestKeyPair("key.alice.json")
+	kpBob := mustLoadTestKeyPair(t, "key.bob.json")
+	kpAlice := mustLoadTestKeyPair(t, "key.alice.json")
 
 	clientState, err := NewClientState(appKey, kpAlice, kpBob.Public)
 	if err != nil {

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021 The Secretstream Authors
+//
+// SPDX-License-Identifier: MIT
+
 // +build none
 
 package main

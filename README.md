@@ -1,4 +1,10 @@
-# secretstream [![Build Status](https://travis-ci.org/cryptoscope/secretstream.svg?branch=master)](https://travis-ci.org/cryptoscope/secretstream) [![GoDoc](https://godoc.org/go.cryptoscope.co/secretstream?status.svg)](https://godoc.org/go.cryptoscope.co/secretstream) [![Go Report Card](https://goreportcard.com/badge/go.cryptoscope.co/secretstream)](https://goreportcard.com/report/go.cryptoscope.co/secretstream) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<!--
+SPDX-FileCopyrightText: 2021 The Secretstream Authors
+
+SPDX-License-Identifier: MIT
+-->
+
+# secretstream [![Build Status](https://travis-ci.org/cryptoscope/secretstream.svg?branch=master)](https://travis-ci.org/cryptoscope/secretstream) [![GoDoc](https://godoc.org/go.cryptoscope.co/secretstream?status.svg)](https://godoc.org/go.cryptoscope.co/secretstream) [![Go Report Card](https://goreportcard.com/badge/go.cryptoscope.co/secretstream)](https://goreportcard.com/report/go.cryptoscope.co/secretstream) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![REUSE status](https://api.reuse.software/badge/github.com/cryptoscope/secretstream)](https://api.reuse.software/info/github.com/cryptoscope/secretstream)
 
 A port of [secret-handshake](https://github.com/auditdrivencrypto/secret-handshake) to [Go](https://golang.org).
 
