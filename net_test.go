@@ -15,9 +15,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/ssbc/go-netwrap"
+	"github.com/ssbc/go-secretstream/secrethandshake"
 	"github.com/stretchr/testify/require"
-	"go.cryptoscope.co/netwrap"
-	"go.cryptoscope.co/secretstream/secrethandshake"
 )
 
 var (

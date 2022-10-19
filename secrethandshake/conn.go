@@ -8,7 +8,7 @@ import (
 	"crypto/rand"
 	"io"
 
-	"go.cryptoscope.co/secretstream/internal/lo25519"
+	"github.com/ssbc/go-secretstream/internal/lo25519"
 	"golang.org/x/crypto/ed25519"
 )
 
