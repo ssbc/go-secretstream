@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
-	"go.cryptoscope.co/secretstream/boxstream"
+	"github.com/ssbc/go-secretstream/boxstream"
 
-	"go.cryptoscope.co/netwrap"
+	"github.com/ssbc/go-netwrap"
 )
 
 const NetworkString = "shs-bs"
@@ -26,7 +26,7 @@ type Addr struct {
 }
 
 // Network returns NetworkString, the network id of this protocol.
-// Can be used with go.cryptoscope.co/netwrap to wrap the underlying connection.
+// Can be used with github.com/go-netwrap to wrap the underlying connection.
 func (a Addr) Network() string {
 	return NetworkString
 }

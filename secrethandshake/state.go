@@ -16,8 +16,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 
-	"go.cryptoscope.co/secretstream/internal/lo25519"
-	"go.cryptoscope.co/secretstream/secrethandshake/internal/extra25519"
+	"github.com/ssbc/go-secretstream/internal/lo25519"
+	"github.com/ssbc/go-secretstream/secrethandshake/internal/extra25519"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/nacl/auth"

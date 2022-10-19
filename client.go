@@ -2,17 +2,17 @@
 //
 // SPDX-License-Identifier: MIT
 
-package secretstream // import "go.cryptoscope.co/secretstream"
+package secretstream // import "github.com/ssbc/go-secretstream"
 
 import (
 	"fmt"
 	"net"
 	"time"
 
-	"go.cryptoscope.co/secretstream/boxstream"
-	"go.cryptoscope.co/secretstream/secrethandshake"
+	"github.com/ssbc/go-secretstream/boxstream"
+	"github.com/ssbc/go-secretstream/secrethandshake"
 
-	"go.cryptoscope.co/netwrap"
+	"github.com/ssbc/go-netwrap"
 )
 
 // Client can dial secret-handshake server endpoints

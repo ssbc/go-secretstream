@@ -9,7 +9,7 @@ import (
 	"io"
 	"os"
 
-	"go.cryptoscope.co/secretstream/secrethandshake"
+	"github.com/ssbc/go-secretstream/secrethandshake"
 	"go.mindeco.de/logging"
 )
 

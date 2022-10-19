@@ -22,13 +22,13 @@ github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/shurcooL/httpfs v0.0.0-20190527155220-6a4d4a70508b/go.mod h1:ZY1cvUeJuFPAdZ/B6v7RHavJWZn2YPVFQ1OSXhCGOkg=
+github.com/ssbc/go-netwrap v0.1.5-0.20221019160355-cd323bb2e29d h1:UnYPPekKU0mHzMMOSuI6117Djq9xni60c/IzzUYxgCI=
+github.com/ssbc/go-netwrap v0.1.5-0.20221019160355-cd323bb2e29d/go.mod h1:tsE1qeqkc8kvf1psPNdJ5s8O+/jE1WlKwsEETb2VZqs=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
-go.cryptoscope.co/netwrap v0.1.0 h1:7MMji1HpnjBhqJXzkGEt7HE+l3IVr5fwoDGsoEXPeqQ=
-go.cryptoscope.co/netwrap v0.1.0/go.mod h1:7zcYswCa4CT+ct54e9uH9+IIbYYETEMHKDNpzl8Ukew=
 go.mindeco.de v1.12.0 h1:K5FHILjJlD/U1HJMs8Y9ZLwdfG4dPEsxw+e+eqg1wKc=
 go.mindeco.de v1.12.0/go.mod h1:dZty08izAk/rSX8wSLen4gMR4WDPYmA6vUTE0QtepHA=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=

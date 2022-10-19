@@ -9,10 +9,10 @@ import (
 	"net"
 	"time"
 
-	"go.cryptoscope.co/secretstream/boxstream"
-	"go.cryptoscope.co/secretstream/secrethandshake"
+	"github.com/ssbc/go-secretstream/boxstream"
+	"github.com/ssbc/go-secretstream/secrethandshake"
 
-	"go.cryptoscope.co/netwrap"
+	"github.com/ssbc/go-netwrap"
 )
 
 // Server can create net.Listeners

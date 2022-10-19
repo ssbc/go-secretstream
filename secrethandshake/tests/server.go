@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
+//go:build none
 // +build none
 
 package main
@@ -11,7 +12,7 @@ import (
 	"io"
 	"os"
 
-	"go.cryptoscope.co/secretstream/secrethandshake"
+	"github.com/ssbc/go-secretstream/secrethandshake"
 	"go.mindeco.de/logging"
 )
 
