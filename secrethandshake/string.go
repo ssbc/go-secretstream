@@ -1,3 +1,4 @@
+//go:build dev
 // +build dev
 
 // SPDX-FileCopyrightText: 2021 The Secretstream Authors
@@ -18,7 +19,7 @@ func (s *State) String() string {
 	buf.WriteString("State {")
 
 	appKeyHex := make([]byte, 2*len(s.appKey))
-	hex.Encode(appKeyHex, s.appKey)
+	hex.Encode(appKeyHex, s.appKey[:])
 	buf.WriteString("\n\tappKey: ")
 	buf.Write(appKeyHex)
 

@@ -37,6 +37,9 @@ jobs:
     - name: Build smoke test
       run: go build -v 
 
+    - name: Build dev smoke test
+      run: go build -v -tags dev
+
     - name: install node ssb-stack
       run: |
         pushd boxstream
@@ -51,4 +54,3 @@ jobs:
 
     - name: Test against shs1-testsuite
       run: cd secrethandshake/tests && make test
-
