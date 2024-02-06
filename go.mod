@@ -11,5 +11,5 @@ require (
 	github.com/ssbc/go-netwrap v0.1.5-0.20221019160355-cd323bb2e29d
 	github.com/stretchr/testify v1.4.0
 	go.mindeco.de v1.12.0
-	golang.org/x/crypto v0.1.0
+	golang.org/x/crypto v0.17.0
 )
